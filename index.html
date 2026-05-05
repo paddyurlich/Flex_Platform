@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flex Platform &mdash; Portfolio Overview</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+
+  <style>
+    /* ── Portfolio Overview — large-screen foyer view ──────────────────── */
+
+    /* Hero KPI strip */
+    .hero-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      margin-bottom: 20px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .hero-tile {
+      background: var(--white);
+      padding: 22px 22px 18px;
+      position: relative;
+      border-right: 1px solid var(--line);
+    }
+    .hero-tile:last-child { border-right: 0; }
+    .hero-tile::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+    }
+    .hero-tile.t-charcoal::before  { background: var(--charcoal); }
+    .hero-tile.t-sapphire::before  { background: var(--sapphire); }
+    .hero-tile.t-rust::before      { background: var(--rust); }
+    .hero-tile.t-green::before     { background: #22c55e; }
+
+    .hero-label {
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px;
+    }
+    .hero-value {
+      font-size: 52px; font-weight: 800;
+      line-height: 1; letter-spacing: -0.03em;
+      color: var(--charcoal);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 8px;
+    }
+    .hero-value .hu {
+      font-size: 22px; font-weight: 600;
+      color: var(--muted); letter-spacing: 0;
+    }
+    .hero-sub {
+      font-size: 12px; color: var(--muted); font-weight: 500;
+    }
+    .hero-tile.t-rust  .hero-value { color: var(--rust); }
+    .hero-tile.t-green .hero-value { color: #16a34a; }
+
+    /* Two-column row */
+    .row-2 {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* Three-column row */
+    .row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* Fleet health donut */
+    .donut-wrap {
+      max-width: 160px;
+      margin: 0 auto 14px;
+      position: relative;
+    }
+    .donut-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .donut-pct {
+      font-size: 30px; font-weight: 800;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1; color: var(--charcoal);
+    }
+    .donut-pct-lbl {
+      font-size: 9px; font-weight: 800;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--muted); margin-top: 2px;
+    }
+
+    /* Status tiles */
+    .status-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-top: 14px;
+    }
+    .st-tile {
+      padding: 12px 14px; border-radius: 3px;
+      border: 1px solid var(--line);
+      background: var(--egg);
+    }
+    .st-tile .stv {
+      font-size: 30px; font-weight: 800;
+      line-height: 1; letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .st-tile .stl {
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .st-ok   { border-left: 5px solid #22c55e; }
+    .st-ok   .stv, .st-ok   .stl { color: #16a34a; }
+    .st-warn { border-left: 5px solid var(--rust); }
+    .st-warn .stv, .st-warn .stl { color: var(--rust); }
+    .st-flt  { border-left: 5px solid #b53b1f; }
+    .st-flt  .stv, .st-flt  .stl { color: #b53b1f; }
+    .st-pnd  { border-left: 5px solid var(--steel); }
+    .st-pnd  .stv, .st-pnd  .stl { color: var(--steel); }
+
+    /* Attention table */
+    .att-table { width: 100%; border-collapse: collapse; }
+    .att-table th {
+      text-align: left; padding: 9px 12px;
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); border-bottom: 2px solid var(--charcoal);
+      background: var(--egg);
+    }
+    .att-table td {
+      padding: 10px 12px; border-bottom: 1px solid var(--line);
+      font-size: 13px; font-weight: 500; color: var(--charcoal);
+    }
+    .att-table tr:last-child td { border-bottom: 0; }
+    .att-table tr:hover td { background: rgba(236,95,48,0.04); }
+    .att-sname { font-weight: 700; }
+    .att-cname { font-size: 11px; color: var(--muted); }
+
+    /* Ranked list */
+    .rank-list { list-style: none; margin: 0; padding: 0; }
+    .rank-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 0; border-bottom: 1px solid var(--line);
+    }
+    .rank-item:last-child { border-bottom: 0; }
+    .rank-n {
+      width: 22px; height: 22px; flex-shrink: 0;
+      background: var(--charcoal); color: var(--egg);
+      font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 2px;
+    }
+    .rank-n.gold { background: var(--rust); color: var(--charcoal); }
+    .rank-body { flex: 1; min-width: 0; }
+    .rank-name {
+      font-size: 13px; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--charcoal);
+    }
+    .rank-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .rank-val {
+      font-size: 15px; font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em; white-space: nowrap;
+      color: var(--charcoal);
+    }
+    .rank-unit { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    /* Sector table */
+    .sec-table { width: 100%; border-collapse: collapse; }
+    .sec-table th {
+      text-align: left; padding: 9px 10px;
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.13em; text-transform: uppercase;
+      color: var(--muted); border-bottom: 2px solid var(--charcoal);
+      background: var(--egg);
+    }
+    .sec-table th.r { text-align: right; }
+    .sec-table td {
+      padding: 9px 10px; border-bottom: 1px solid var(--line);
+      font-size: 12.5px; font-weight: 500; color: var(--charcoal);
+    }
+    .sec-table td.r { text-align: right; font-variant-numeric: tabular-nums; }
+    .sec-table td.secname { font-weight: 700; }
+    .sec-table tr:last-child td { border-bottom: 0; }
+
+    /* Asset KV list */
+    .asset-kv {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 11px 0; border-bottom: 1px solid var(--line);
+    }
+    .asset-kv:last-child { border-bottom: 0; }
+    .asset-kv .ak { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+    .asset-kv .av {
+      font-size: 16px; font-weight: 800;
+      font-variant-numeric: tabular-nums; color: var(--charcoal);
+    }
+    .asset-kv .av .au { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    /* Live badge */
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px;
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 999px;
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: #15803d;
+    }
+    .live-dot {
+      width: 6px; height: 6px;
+      background: #22c55e; border-radius: 50%;
+      animation: livepulse 2s ease-in-out infinite;
+    }
+    @keyframes livepulse { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+    /* Page header */
+    .ov-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 20px; padding-bottom: 14px;
+      border-bottom: 4px solid var(--charcoal);
+    }
+    .ov-head h1 {
+      font-size: 34px; font-weight: 800;
+      letter-spacing: -0.025em; margin: 0 0 4px; line-height: 1;
+    }
+    .ov-head .sub { font-size: 13px; color: var(--muted); font-weight: 500; margin: 0; }
+    .ov-clock-wrap { text-align: right; }
+    .ov-clock {
+      font-size: 34px; font-weight: 800;
+      letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+      line-height: 1; color: var(--charcoal);
+      font-family: var(--mono);
+    }
+    .ov-date { font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+
+    /* ── Dark mode ─────────────────────────────────────────────────────── */
+    [data-theme="dark"] .hero-tile            { background: #25221f; border-right-color: #2e2a25; }
+    [data-theme="dark"] .hero-strip           { border-color: #2e2a25; }
+    [data-theme="dark"] .hero-value           { color: #e8e3d6; }
+    [data-theme="dark"] .hero-tile.t-rust  .hero-value { color: #f47445; }
+    [data-theme="dark"] .hero-tile.t-green .hero-value { color: #4ade80; }
+    [data-theme="dark"] .st-tile             { background: #1d1b18; border-color: #2e2a25; }
+    [data-theme="dark"] .st-ok  .stv,
+    [data-theme="dark"] .st-ok  .stl         { color: #4ade80; }
+    [data-theme="dark"] .att-table th        { background: #1d1b18; border-bottom-color: #f47445; color: #a39e92; }
+    [data-theme="dark"] .att-table td        { color: #e8e3d6; border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .att-table tr:hover td { background: rgba(244,116,69,0.05); }
+    [data-theme="dark"] .att-cname           { color: #a39e92; }
+    [data-theme="dark"] .rank-item           { border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .rank-name           { color: #e8e3d6; }
+    [data-theme="dark"] .rank-n              { background: #2e2a25; color: #e8e3d6; }
+    [data-theme="dark"] .rank-val            { color: #e8e3d6; }
+    [data-theme="dark"] .sec-table th        { background: #1d1b18; border-bottom-color: #f47445; color: #a39e92; }
+    [data-theme="dark"] .sec-table td        { color: #e8e3d6; border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .asset-kv            { border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .asset-kv .av        { color: #e8e3d6; }
+    [data-theme="dark"] .live-badge          { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2); color: #4ade80; }
+    [data-theme="dark"] .ov-head            { border-bottom-color: #f47445; }
+    [data-theme="dark"] .ov-head h1         { color: #e8e3d6; }
+    [data-theme="dark"] .ov-clock           { color: #e8e3d6; }
+    [data-theme="dark"] .donut-pct          { color: #e8e3d6; }
+
+    /* ── Responsive ────────────────────────────────────────────────────── */
+    @media (max-width: 1280px) {
+      .hero-value { font-size: 40px; }
+      .hero-value .hu { font-size: 18px; }
+      .row-2 { grid-template-columns: 300px 1fr; }
+    }
+    @media (max-width: 1100px) {
+      .hero-strip { grid-template-columns: repeat(3, 1fr); }
+      .hero-tile:nth-child(3) { border-right: 0; }
+      .hero-tile:nth-child(n+4) { border-top: 1px solid var(--line); }
+      .hero-tile:nth-child(5)   { border-right: 0; }
+      .row-2 { grid-template-columns: 1fr; }
+      .row-3 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 820px) {
+      .hero-strip { grid-template-columns: 1fr 1fr; }
+      .hero-tile { border-right: 1px solid var(--line); }
+      .hero-tile:nth-child(2n) { border-right: 0; }
+      .hero-tile:nth-child(n+3) { border-top: 1px solid var(--line); }
+      .hero-value { font-size: 32px; }
+      .hero-value .hu { font-size: 15px; }
+      .row-3 { grid-template-columns: 1fr; }
+      .ov-clock { font-size: 24px; }
+    }
+  </style>
+</head>
+
+<body data-page="overview">
+
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Overview</div>
+        <a class="nav-item" data-nav="overview" href="index.html">Portfolio Overview</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio &mdash; Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="#">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">Flex Platform &nbsp;/&nbsp; <strong>Overview</strong></div>
+        <div class="topbar-right">
+          <span class="live-badge"><span class="live-dot"></span>Live</span>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+              <line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/>
+              <line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/>
+              <line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/>
+              <line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/>
+            </svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <!-- ======= PAGE ======= -->
+      <main class="page">
+
+        <!-- Header -->
+        <header class="ov-head">
+          <div>
+            <h1>Portfolio Overview</h1>
+            <p class="sub">All Flex assets under management &mdash; status and performance</p>
+          </div>
+          <div class="ov-clock-wrap">
+            <div class="ov-clock" id="ovClock">--:--:--</div>
+            <div class="ov-date" id="ovDate">&nbsp;</div>
+          </div>
+        </header>
+
+        <!-- Hero KPI strip -->
+        <div class="hero-strip" id="heroStrip">
+          <div class="hero-tile t-charcoal">
+            <div class="hero-label">Sites under management</div>
+            <div class="hero-value" id="tileSites">—</div>
+            <div class="hero-sub" id="tileSitesSub">&nbsp;</div>
+          </div>
+          <div class="hero-tile t-sapphire">
+            <div class="hero-label">Solar installed</div>
+            <div class="hero-value" id="tileSolar">—</div>
+            <div class="hero-sub">Total PV capacity</div>
+          </div>
+          <div class="hero-tile t-rust">
+            <div class="hero-label">Battery storage</div>
+            <div class="hero-value" id="tileBattery">—</div>
+            <div class="hero-sub" id="tileBatterySub">&nbsp;</div>
+          </div>
+          <div class="hero-tile t-charcoal">
+            <div class="hero-label">Energy &mdash; last 30 days</div>
+            <div class="hero-value" id="tileEnergy">—</div>
+            <div class="hero-sub" id="tileEnergySub">&nbsp;</div>
+          </div>
+          <div class="hero-tile t-green">
+            <div class="hero-label">Fleet health</div>
+            <div class="hero-value" id="tileHealth">—</div>
+            <div class="hero-sub" id="tileHealthSub">&nbsp;</div>
+          </div>
+        </div>
+
+        <!-- Row 2: Fleet status + Attention -->
+        <div class="row-2">
+
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-head">
+              <h2>Fleet Status</h2>
+              <span class="step" id="fleetAsAt"></span>
+            </div>
+            <div class="card-body">
+              <div class="donut-wrap">
+                <canvas id="fleetChart" width="160" height="160"></canvas>
+                <div class="donut-center">
+                  <div class="donut-pct" id="donutPct">—</div>
+                  <div class="donut-pct-lbl">Online</div>
+                </div>
+              </div>
+              <div class="status-grid">
+                <div class="st-tile st-ok">
+                  <div class="stv" id="stOk">—</div>
+                  <div class="stl">OK</div>
+                </div>
+                <div class="st-tile st-warn">
+                  <div class="stv" id="stWarn">—</div>
+                  <div class="stl">Warning</div>
+                </div>
+                <div class="st-tile st-flt">
+                  <div class="stv" id="stFault">—</div>
+                  <div class="stl">Fault</div>
+                </div>
+                <div class="st-tile st-pnd">
+                  <div class="stv" id="stPending">—</div>
+                  <div class="stl">Pending</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-head">
+              <h2>Sites Requiring Attention</h2>
+              <span class="step" id="attCount"></span>
+            </div>
+            <div style="max-height:340px;overflow-y:auto;">
+              <table class="att-table">
+                <thead>
+                  <tr>
+                    <th>Site / Customer</th>
+                    <th>Sector</th>
+                    <th>Status</th>
+                    <th>Last Reading</th>
+                  </tr>
+                </thead>
+                <tbody id="attBody">
+                  <tr><td colspan="4" style="padding:24px;text-align:center;color:var(--muted);font-style:italic;">Loading&hellip;</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Row 3: Sector / Top customers / Assets -->
+        <div class="row-3">
+
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-head"><h2>Portfolio by Sector</h2></div>
+            <table class="sec-table">
+              <thead>
+                <tr>
+                  <th>Sector</th>
+                  <th class="r">Sites</th>
+                  <th class="r">Solar</th>
+                  <th class="r">Batt.</th>
+                  <th class="r">Energy 30d</th>
+                </tr>
+              </thead>
+              <tbody id="secBody">
+                <tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted);font-style:italic;">Loading&hellip;</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-head">
+              <h2>Top Customers</h2>
+              <span class="step">by 30-day output</span>
+            </div>
+            <div class="card-body">
+              <ul class="rank-list" id="rankList">
+                <li style="padding:20px;text-align:center;color:var(--muted);font-style:italic;">Loading&hellip;</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-head"><h2>Asset Summary</h2></div>
+            <div class="card-body">
+              <div class="asset-kv"><span class="ak">Total inverter capacity</span><span class="av" id="asInverter">—</span></div>
+              <div class="asset-kv"><span class="ak">Active Flex products</span><span class="av" id="asActiveFlex">—</span></div>
+              <div class="asset-kv"><span class="ak">Sites with battery</span><span class="av" id="asBatterySites">—</span></div>
+              <div class="asset-kv"><span class="ak">Sites with solar</span><span class="av" id="asSolarSites">—</span></div>
+              <div class="asset-kv"><span class="ak">Connected &amp; streaming</span><span class="av" id="asConnected">—</span></div>
+              <div class="asset-kv"><span class="ak">Awaiting first reading</span><span class="av" id="asPending">—</span></div>
+              <div class="asset-kv"><span class="ak">Energy &mdash; last 24 hours</span><span class="av" id="asEnergy24">—</span></div>
+              <div class="asset-kv"><span class="ak">Customers managed</span><span class="av" id="asCustomers">—</span></div>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+
+      <div class="footer-lockup">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <div class="meta-text">Flex Platform &nbsp;&middot;&nbsp; Portfolio Overview</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="data/sites_and_customers.js"></script>
+<script src="assets/flex-platform.js"></script>
+<script>
+(function () {
+  /* ── helpers ── */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function fmtEnergy(kwh) {
+    if (kwh >= 1000000) return { val: (kwh/1000000).toFixed(1), unit: 'GWh' };
+    if (kwh >= 1000)    return { val: (kwh/1000).toFixed(1),    unit: 'MWh' };
+    return { val: Math.round(kwh).toLocaleString('en-NZ'), unit: 'kWh' };
+  }
+  function fmtPower(kwp) {
+    if (kwp >= 1000) return { val: (kwp/1000).toFixed(1), unit: 'MWp' };
+    return { val: Math.round(kwp).toLocaleString('en-NZ'), unit: 'kWp' };
+  }
+  function fmtStore(kwh) {
+    if (kwh >= 1000) return { val: (kwh/1000).toFixed(1), unit: 'MWh' };
+    return { val: Math.round(kwh).toLocaleString('en-NZ'), unit: 'kWh' };
+  }
+  function heroHTML(val, unit) {
+    return val + (unit ? '<span class="hu"> ' + unit + '</span>' : '');
+  }
+  function setHTML(id, html) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  }
+  function setText(id, txt) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  }
+
+  /* ── live clock (NZ) ── */
+  function tick() {
+    var now = new Date();
+    setText('ovClock', now.toLocaleTimeString('en-NZ', {
+      timeZone:'Pacific/Auckland', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+    }));
+    setText('ovDate', now.toLocaleDateString('en-NZ', {
+      timeZone:'Pacific/Auckland', weekday:'short', day:'numeric', month:'short', year:'numeric'
+    }) + ' NZT');
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* ── data ── */
+  var data = window.FlexData;
+  if (!data || !data.sites) {
+    document.getElementById('heroStrip').innerHTML =
+      '<div style="grid-column:1/-1;padding:24px;color:var(--rust);font-weight:700;">' +
+      'Unable to load data — check that data/sites_and_customers.js is present.</div>';
+    return;
+  }
+
+  var sites     = data.sites;
+  var customers = data.customers || [];
+
+  /* ── aggregate ── */
+  var totalSolar = 0, solarSites = 0;
+  var totalBatt  = 0, battSites  = 0;
+  var totalE30   = 0, totalE24   = 0, totalInv = 0;
+  var activeFlex = 0;
+  var byStatus   = { ok:0, warn:0, fault:0, pending:0 };
+
+  sites.forEach(function(s) {
+    totalSolar += s.pv_size_kwp || 0;
+    if ((s.pv_size_kwp || 0) > 0) solarSites++;
+    if (s.has_battery) { totalBatt += s.battery_capacity_kwh || 0; battSites++; }
+    totalE30  += s.kwh_30d || 0;
+    totalE24  += s.kwh_24h || 0;
+    totalInv  += s.inverter_size_kw || 0;
+    if (s.active_flex && s.active_flex !== '—') activeFlex++;
+    byStatus[s.status] = (byStatus[s.status] || 0) + 1;
+  });
+
+  var totalSites     = sites.length;
+  var totalCustomers = customers.length;
+  var connected      = totalSites - (byStatus.pending || 0);
+  var issues         = (byStatus.warn || 0) + (byStatus.fault || 0);
+  var fleetHealth    = totalSites > 0 ? Math.round((byStatus.ok / totalSites) * 100) : 0;
+
+  /* ── hero tiles ── */
+  setHTML('tileSites',    heroHTML(String(totalSites), ''));
+  setHTML('tileSitesSub', totalCustomers + ' customers &middot; ' + connected + ' connected');
+
+  var sol = fmtPower(totalSolar);
+  setHTML('tileSolar', heroHTML(sol.val, sol.unit));
+
+  var bat = fmtStore(totalBatt);
+  setHTML('tileBattery',    heroHTML(bat.val, bat.unit));
+  setHTML('tileBatterySub', 'Across ' + battSites + ' battery sites');
+
+  var e30 = fmtEnergy(totalE30), e24 = fmtEnergy(totalE24);
+  setHTML('tileEnergy',    heroHTML(e30.val, e30.unit));
+  setHTML('tileEnergySub', e24.val + ' ' + e24.unit + ' in last 24 h');
+
+  setHTML('tileHealth',    heroHTML(String(fleetHealth), '%'));
+  setHTML('tileHealthSub', byStatus.ok + ' ok &middot; ' + issues + ' issues &middot; ' + (byStatus.pending||0) + ' pending');
+
+  /* ── status tiles ── */
+  setText('stOk',      byStatus.ok      || 0);
+  setText('stWarn',    byStatus.warn    || 0);
+  setText('stFault',   byStatus.fault   || 0);
+  setText('stPending', byStatus.pending || 0);
+  setText('donutPct',  fleetHealth + '%');
+
+  /* fleet "as at" label */
+  var meta = data.meta || {};
+  if (meta.generated_at) {
+    var gd = new Date(meta.generated_at);
+    setText('fleetAsAt', 'as at ' + gd.toLocaleDateString('en-NZ', {
+      day:'numeric', month:'short', year:'numeric', timeZone:'Pacific/Auckland'
+    }));
+  }
+
+  /* ── donut chart ── */
+  var isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+  var pendColor = isDark ? '#2e2a25' : '#e4dfd1';
+
+  new Chart(document.getElementById('fleetChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['OK','Warning','Fault','Pending'],
+      datasets: [{
+        data: [byStatus.ok||0, byStatus.warn||0, byStatus.fault||0, byStatus.pending||0],
+        backgroundColor: ['#22c55e','#ec5f30','#b53b1f', pendColor],
+        borderWidth: 0,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      cutout: '74%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) { return ' ' + ctx.label + ': ' + ctx.parsed + ' sites'; }
+          }
+        }
+      },
+      animation: { duration: 500, easing: 'easeOutQuart' }
+    }
+  });
+
+  /* ── attention sites ── */
+  var attention = sites.filter(function(s) {
+    return s.status === 'warn' || s.status === 'fault';
+  }).sort(function(a,b) {
+    return (a.status === 'fault' ? 0 : 1) - (b.status === 'fault' ? 0 : 1);
+  });
+
+  setText('attCount', attention.length > 0
+    ? attention.length + ' site' + (attention.length !== 1 ? 's' : '')
+    : 'All clear');
+
+  var MAXSHOW = 10;
+  var attHtml = '';
+  if (attention.length === 0) {
+    attHtml = '<tr><td colspan="4">'
+      + '<div style="padding:28px 20px;text-align:center;">'
+      + '<div style="font-size:26px;margin-bottom:6px;color:#16a34a;">&#10003;</div>'
+      + '<div style="font-weight:700;color:#16a34a;font-size:14px;">All sites healthy</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:4px;">No warnings or faults detected</div>'
+      + '</div></td></tr>';
+  } else {
+    attention.slice(0, MAXSHOW).forEach(function(s) {
+      var badge = s.status === 'fault'
+        ? '<span class="flag fault">Fault</span>'
+        : '<span class="flag warn">Warn</span>';
+      attHtml += '<tr>'
+        + '<td><div class="att-sname">' + esc(s.name) + '</div>'
+        + '<div class="att-cname">' + esc(s.customer_name || '') + '</div></td>'
+        + '<td>' + esc(s.sector || '—') + '</td>'
+        + '<td>' + badge + '</td>'
+        + '<td style="font-size:12px;color:var(--muted);">' + esc(s.last_reading || '—') + '</td>'
+        + '</tr>';
+    });
+    if (attention.length > MAXSHOW) {
+      attHtml += '<tr><td colspan="4" style="padding:8px 12px;text-align:center;font-size:12px;color:var(--muted);font-style:italic;">+ '
+        + (attention.length - MAXSHOW) + ' more sites&hellip;</td></tr>';
+    }
+  }
+  setHTML('attBody', attHtml);
+
+  /* ── top customers ── */
+  var custData = customers.map(function(c) {
+    var cs = sites.filter(function(s) { return s.customer_id === c.id; });
+    return {
+      name:   c.name,
+      energy: cs.reduce(function(sum,s) { return sum + (s.kwh_30d||0); }, 0),
+      count:  cs.length,
+      sector: c.sector
+    };
+  }).filter(function(c) { return c.energy > 0; })
+    .sort(function(a,b) { return b.energy - a.energy; })
+    .slice(0, 8);
+
+  var rankHtml = '';
+  custData.forEach(function(c, i) {
+    var e = fmtEnergy(c.energy);
+    rankHtml += '<li class="rank-item">'
+      + '<div class="rank-n' + (i === 0 ? ' gold' : '') + '">' + (i+1) + '</div>'
+      + '<div class="rank-body">'
+      + '<div class="rank-name">' + esc(c.name) + '</div>'
+      + '<div class="rank-meta">' + c.count + ' site' + (c.count!==1?'s':'')
+      + (c.sector ? ' &middot; ' + esc(c.sector) : '') + '</div>'
+      + '</div>'
+      + '<div class="rank-val">' + esc(e.val) + ' <span class="rank-unit">' + esc(e.unit) + '</span></div>'
+      + '</li>';
+  });
+  setHTML('rankList', rankHtml || '<li style="padding:20px;text-align:center;color:var(--muted);">No data</li>');
+
+  /* ── sector breakdown ── */
+  var bySec = {};
+  sites.forEach(function(s) {
+    var k = s.sector || 'Other';
+    if (!bySec[k]) bySec[k] = { count:0, solar:0, batt:0, energy:0 };
+    bySec[k].count++;
+    bySec[k].solar += s.pv_size_kwp || 0;
+    if (s.has_battery) bySec[k].batt++;
+    bySec[k].energy += s.kwh_30d || 0;
+  });
+
+  var secHtml = '';
+  Object.keys(bySec)
+    .map(function(k) { return { k:k, d:bySec[k] }; })
+    .sort(function(a,b) { return b.d.count - a.d.count; })
+    .forEach(function(row) {
+      var s = fmtPower(row.d.solar);
+      var e = fmtEnergy(row.d.energy);
+      secHtml += '<tr>'
+        + '<td class="secname">' + esc(row.k) + '</td>'
+        + '<td class="r">' + row.d.count + '</td>'
+        + '<td class="r">' + s.val + '&thinsp;' + s.unit + '</td>'
+        + '<td class="r">' + row.d.batt + '</td>'
+        + '<td class="r">' + e.val + '&thinsp;' + e.unit + '</td>'
+        + '</tr>';
+    });
+  setHTML('secBody', secHtml || '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted);">No data</td></tr>');
+
+  /* ── asset summary ── */
+  var inv = fmtPower(totalInv);
+  var e24f = fmtEnergy(totalE24);
+
+  function avHTML(val, unit) {
+    return esc(val) + (unit ? ' <span class="au">' + esc(unit) + '</span>' : '');
+  }
+  setHTML('asInverter',    avHTML(inv.val, inv.unit));
+  setHTML('asActiveFlex',  activeFlex + ' <span class="au">/ ' + totalSites + ' sites</span>');
+  setHTML('asBatterySites', battSites + ' <span class="au">sites</span>');
+  setHTML('asSolarSites',   solarSites + ' <span class="au">sites</span>');
+  setHTML('asConnected',    connected + ' <span class="au">/ ' + totalSites + ' sites</span>');
+  setHTML('asPending',      (byStatus.pending||0) + ' <span class="au">sites</span>');
+  setHTML('asEnergy24',    avHTML(e24f.val, e24f.unit));
+  setHTML('asCustomers',    totalCustomers + ' <span class="au">customers</span>');
+
+})();
+</script>
+</body>
+</html>
