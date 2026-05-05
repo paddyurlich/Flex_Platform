@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flex:Load Monitoring &mdash; Blackcurrent</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+
+  <style>
+    /* ---- Toolbar ---- */
+    .lm-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .lm-site-select {
+      padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--charcoal);
+      background: var(--white); cursor: pointer; min-width: 240px;
+    }
+    .period-tabs { display: flex; gap: 4px; }
+    .period-tab {
+      padding: 7px 14px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-family: inherit; font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; cursor: pointer; background: var(--white);
+      color: var(--muted); transition: background 0.1s, color 0.1s, border-color 0.1s;
+    }
+    .period-tab.active, .period-tab:hover {
+      background: var(--charcoal); color: var(--egg); border-color: var(--charcoal);
+    }
+
+    /* ---- Alert banner ---- */
+    .alert-banner {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(236,95,48,.08); border: 1px solid rgba(236,95,48,.3);
+      border-left: 3px solid var(--rust);
+      border-radius: 3px; padding: 12px 16px; margin-bottom: 20px;
+      font-size: 13px; font-weight: 600; color: var(--charcoal);
+    }
+    .alert-banner .alert-icon {
+      font-size: 16px; flex-shrink: 0; line-height: 1;
+    }
+    .alert-banner .alert-text strong { font-weight: 800; }
+    .alert-banner .alert-text span { color: var(--muted); font-size: 12px; margin-left: 8px; }
+
+    /* ---- Card sections ---- */
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px 12px; border-bottom: 1px solid var(--line);
+    }
+    .section-title {
+      font-size: 13px; font-weight: 800; letter-spacing: -0.01em; color: var(--charcoal);
+    }
+    .section-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 2px;
+    }
+    .section-badge.warn {
+      background: rgba(236,95,48,.12); color: var(--rust);
+      border: 1px solid rgba(236,95,48,.25);
+    }
+    .section-badge.ok {
+      background: rgba(85,151,209,.10); color: var(--sapphire);
+      border: 1px solid rgba(85,151,209,.22);
+    }
+    .section-body { padding: 20px; }
+    .section-body.no-pad { padding: 0; }
+
+    /* ---- Chart canvas ---- */
+    .chart-wrap { position: relative; }
+    .chart-wrap canvas { max-width: 100%; }
+
+    /* ---- Phase summary row ---- */
+    .phase-summary {
+      display: flex; gap: 0; margin-top: 16px;
+      border: 1px solid var(--line); border-radius: 3px; overflow: hidden;
+    }
+    .phase-item {
+      flex: 1; padding: 10px 14px; border-right: 1px solid var(--line);
+      background: var(--white);
+    }
+    .phase-item:last-child { border-right: none; }
+    .phase-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .phase-label.l1 { color: var(--rust); }
+    .phase-label.l2 { color: var(--sapphire); }
+    .phase-label.l3 { color: var(--steel); }
+    .phase-value {
+      font-size: 20px; font-weight: 800; color: var(--charcoal); letter-spacing: -0.02em;
+    }
+    .phase-value .unit { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .phase-delta {
+      font-size: 11px; font-weight: 700; margin-top: 2px;
+    }
+    .phase-delta.warn { color: var(--rust); }
+    .phase-delta.ok   { color: var(--steel); }
+
+    /* ---- Supply meter ---- */
+    .supply-meter {
+      margin-top: 16px; padding: 12px 16px;
+      background: var(--bg); border: 1px solid var(--line); border-radius: 3px;
+    }
+    .supply-meter-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .supply-meter-bar {
+      height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; margin-bottom: 5px;
+    }
+    .supply-meter-fill {
+      height: 100%; border-radius: 99px; transition: width 0.4s;
+    }
+    .supply-meter-fill.low  { background: var(--sapphire); }
+    .supply-meter-fill.med  { background: #e8a730; }
+    .supply-meter-fill.high { background: var(--rust); }
+    .supply-meter-meta {
+      display: flex; justify-content: space-between;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+    }
+    .supply-meter-meta .current { color: var(--charcoal); font-weight: 800; }
+
+    /* ---- Load events table ---- */
+    .events-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .events-table th {
+      text-align: left; padding: 8px 16px;
+      font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--line);
+    }
+    .events-table td {
+      padding: 10px 16px; border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    .events-table tr:last-child td { border-bottom: none; }
+    .event-type {
+      display: inline-block; padding: 2px 7px; border-radius: 2px;
+      font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .event-type.overload { background: rgba(236,95,48,.12); color: var(--rust); border: 1px solid rgba(236,95,48,.25); }
+    .event-type.imbalance { background: rgba(225,175,0,.12); color: #9a7200; border: 1px solid rgba(225,175,0,.3); }
+    .event-type.large-load { background: rgba(85,151,209,.10); color: var(--sapphire); border: 1px solid rgba(85,151,209,.22); }
+    .event-type.resolved { background: rgba(162,160,158,.12); color: var(--steel); border: 1px solid rgba(162,160,158,.25); }
+
+    /* ---- Dark mode ---- */
+    [data-theme="dark"] .lm-site-select { background: #1c1a17; color: #e8e3d6; border-color: #443f37; }
+    [data-theme="dark"] .alert-banner { background: rgba(236,95,48,.07); border-color: rgba(236,95,48,.25); }
+    [data-theme="dark"] .alert-banner .alert-text { color: #e8e3d6; }
+    [data-theme="dark"] .section-head { border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .section-title { color: #e8e3d6; }
+    [data-theme="dark"] .phase-item { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .phase-summary { border-color: #2e2a25; }
+    [data-theme="dark"] .phase-item { border-right-color: #2e2a25; }
+    [data-theme="dark"] .phase-value { color: #e8e3d6; }
+    [data-theme="dark"] .supply-meter { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .supply-meter-bar { background: #2e2a25; }
+    [data-theme="dark"] .supply-meter-meta .current { color: #e8e3d6; }
+    [data-theme="dark"] .events-table th { background: #1c1a17; border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .events-table td { border-bottom-color: #2e2a25; color: #c8c3b8; }
+    [data-theme="dark"] .event-type.imbalance { color: #c4960a; }
+
+    /* ---- Mobile ---- */
+    @media (max-width: 640px) {
+      .lm-toolbar { flex-direction: column; align-items: flex-start; }
+      .phase-summary { flex-direction: column; }
+      .phase-item { border-right: none; border-bottom: 1px solid var(--line); }
+      .phase-item:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+
+<body data-page="load-monitoring">
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio - Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="flex-simulator.html">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Help</div>
+        <a class="nav-item" data-nav="faq" href="flex-faq.html">FAQ</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">SITES / <strong id="breadcrumbSite">—</strong> / LOAD MONITORING</div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/><line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/></svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE CONTENT ============ -->
+      <main class="page">
+
+        <header class="page-head">
+          <div>
+            <h1>Flex:Load Monitoring</h1>
+            <p class="page-sub">Supply capacity, phase balance, and load profile visibility.</p>
+          </div>
+          <span class="module-tag">Operate</span>
+        </header>
+
+        <!-- toolbar: site selector + period tabs -->
+        <div class="lm-toolbar">
+          <select class="lm-site-select" id="siteSelect"></select>
+          <div class="period-tabs">
+            <button class="period-tab active" onclick="setPeriod(this,'today')">Today</button>
+            <button class="period-tab" onclick="setPeriod(this,'yesterday')">Yesterday</button>
+            <button class="period-tab" onclick="setPeriod(this,'7d')">7 days</button>
+          </div>
+        </div>
+
+        <!-- alert banner -->
+        <div class="alert-banner" id="alertBanner">
+          <div class="alert-icon">⚠</div>
+          <div class="alert-text">
+            <strong>Phase imbalance detected — L2</strong>
+            <span>Peak deviation +27% above average. Sustained since 08:30.</span>
+          </div>
+        </div>
+
+        <!-- stat tiles -->
+        <div class="coverage" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stat actual">
+            <div class="lbl">Phase Status</div>
+            <div class="val" id="tilePhase" style="color:var(--rust);font-size:20px;">⚠ Imbalanced</div>
+            <div class="sub" id="tilePhaseSub">L2 +27% avg deviation</div>
+          </div>
+          <div class="stat estimated">
+            <div class="lbl">Peak Demand Today</div>
+            <div class="val" id="tilePeak">187<span class="unit"> kW</span></div>
+            <div class="sub">at 12:30 &mdash; 78% of limit</div>
+          </div>
+          <div class="stat">
+            <div class="lbl">Supply Utilisation</div>
+            <div class="val" id="tileUtil">62<span class="unit">%</span></div>
+            <div class="sub" id="tileUtilSub">current &mdash; 240 kVA fuse rating</div>
+          </div>
+          <div class="stat rows">
+            <div class="lbl">Load Events</div>
+            <div class="val" id="tileEvents" style="color:var(--rust);">3</div>
+            <div class="sub">in selected period</div>
+          </div>
+        </div>
+
+      <!-- Phase balance chart -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-head">
+          <span class="section-title">Phase Balance</span>
+          <span class="section-badge warn" id="phaseBadge">&#9888; L2 Imbalance</span>
+        </div>
+        <div class="section-body">
+          <div class="chart-wrap" style="height:220px;">
+            <canvas id="phaseChart"></canvas>
+          </div>
+          <div class="phase-summary" id="phaseSummary">
+            <div class="phase-item">
+              <div class="phase-label l1">L1</div>
+              <div class="phase-value">68<span class="unit"> A</span></div>
+              <div class="phase-delta ok">Balanced</div>
+            </div>
+            <div class="phase-item">
+              <div class="phase-label l2">L2</div>
+              <div class="phase-value">86<span class="unit"> A</span></div>
+              <div class="phase-delta warn">+26% above average</div>
+            </div>
+            <div class="phase-item">
+              <div class="phase-label l3">L3</div>
+              <div class="phase-value">71<span class="unit"> A</span></div>
+              <div class="phase-delta ok">Within range</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supply capacity chart -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-head">
+          <span class="section-title">Supply Capacity</span>
+          <span class="section-badge ok" id="supplyBadge">Within limit</span>
+        </div>
+        <div class="section-body">
+          <div class="chart-wrap" style="height:180px;">
+            <canvas id="supplyChart"></canvas>
+          </div>
+          <div class="supply-meter" id="supplyMeter">
+            <div class="supply-meter-label">Current utilisation &mdash; 240 kVA connection</div>
+            <div class="supply-meter-bar">
+              <div class="supply-meter-fill med" id="supplyFill" style="width:62%"></div>
+            </div>
+            <div class="supply-meter-meta">
+              <span class="current" id="supplyCurrentLabel">149 kW now</span>
+              <span id="supplyLimitLabel">240 kVA limit</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Load profile chart -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-head">
+          <span class="section-title">Load Profile</span>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">Sub-meter breakdown</span>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="chart-wrap" style="height:200px;">
+            <canvas id="loadChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Load events log -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="section-head">
+          <span class="section-title">Load Events</span>
+          <span style="font-size:11px;color:var(--muted);font-weight:600;">Significant events this period</span>
+        </div>
+        <div class="section-body no-pad">
+          <table class="events-table" id="eventsTable">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Duration</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="eventsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      </main>
+    </section>
+  </div>
+</div>
+
+<!-- modal container (shared) -->
+<div id="flexModalContainer"></div>
+
+<script src="data/sites_and_customers.js"></script>
+<script src="assets/flex-platform.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+/* =========================================================
+   Flex:Load Monitoring — page logic
+   ========================================================= */
+
+/* ---- NZ timezone helper ---- */
+function getNZ() {
+  var now = new Date();
+  var month = now.getUTCMonth() + 1;
+  var dst = month > 8 || month < 3;
+  return new Date(now.getTime() + (dst ? 13 : 12) * 3600000);
+}
+
+/* ---- Seeded PRNG (same approach as other pages) ---- */
+function seeded(seed) {
+  var s = seed;
+  return function () {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+/* ---- Generate half-hourly labels for today ---- */
+function halfHourLabels() {
+  var labels = [];
+  for (var h = 0; h < 24; h++) {
+    labels.push(h + ':00');
+    labels.push(h + ':30');
+  }
+  return labels;
+}
+
+/* ---- Generate hourly labels ---- */
+function hourLabels() {
+  var labels = [];
+  for (var h = 0; h < 24; h++) {
+    labels.push(h + ':00');
+  }
+  return labels;
+}
+
+/* ---- Synthetic load shape ---- */
+function loadProfile(rand, base, businessHours, peak) {
+  var data = [];
+  for (var h = 0; h < 24; h++) {
+    var biz = (h >= 7 && h < 18) ? businessHours : 0;
+    var lunch = (h >= 11 && h < 14) ? peak * 0.5 : 0;
+    var noise = (rand() - 0.5) * base * 0.15;
+    data.push(Math.max(0, base + biz + lunch + noise));
+  }
+  return data;
+}
+
+/* ---- Build phase data (48 half-hourly points) ---- */
+function phaseData(rand, baseA, biasL2) {
+  var l1 = [], l2 = [], l3 = [];
+  for (var i = 0; i < 48; i++) {
+    var h = i / 2;
+    var biz = (h >= 7 && h < 18) ? 40 : 5;
+    var lunch = (h >= 11.5 && h < 13.5) ? 20 : 0;
+    var base = baseA + biz + lunch;
+    l1.push(Math.max(10, base + (rand() - 0.5) * 8));
+    l2.push(Math.max(10, base * biasL2 + (rand() - 0.5) * 8));
+    l3.push(Math.max(10, base + (rand() - 0.5) * 10 - 3));
+  }
+  return { l1: l1, l2: l2, l3: l3 };
+}
+
+/* ---- Chart.js defaults ---- */
+var DARK = document.documentElement.getAttribute('data-theme') === 'dark';
+function gridColour() { return DARK ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'; }
+function textColour() { return DARK ? '#8a8278' : '#888278'; }
+var RUST    = '#ec5f30';
+var SAPPHIRE= '#5597d1';
+var STEEL   = '#a2a09e';
+var CHARCOAL= '#22201d';
+var HVAC_C  = '#5597d1';
+var EV_C    = '#ec5f30';
+var PROC_C  = '#22201d';
+var LIGHT_C = '#a2a09e';
+
+var phaseChartInst = null;
+var supplyChartInst = null;
+var loadChartInst = null;
+
+/* ---- Site population ---- */
+var SITES = [];
+(function () {
+  var raw = (window.FlexData && window.FlexData.sites) ? window.FlexData.sites : [];
+  raw.forEach(function (s) {
+    if (s.name) SITES.push(s);
+  });
+  if (!SITES.length) {
+    SITES = [
+      { id: 504, name: 'Ashhurst School', primary_address: '96 Cambridge Avenue, Ashhurst' },
+      { id: 439, name: 'Wairakei Primary', primary_address: '2 Kauri Drive, Wairakei' },
+      { id: 491, name: 'Keith Andrews', primary_address: '131 Roscommon Road, Wiri' }
+    ];
+  }
+})();
+
+var currentSiteId = SITES[0] ? SITES[0].id : 504;
+
+/* ---- Populate site selector ---- */
+(function () {
+  var sel = document.getElementById('siteSelect');
+  SITES.forEach(function (s) {
+    var opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name + (s.primary_address ? ' — ' + s.primary_address : '');
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', function () {
+    currentSiteId = parseInt(this.value, 10);
+    var site = SITES.filter(function (s) { return s.id === currentSiteId; })[0];
+    if (site) document.getElementById('breadcrumbSite').textContent = site.name.toUpperCase();
+    render();
+  });
+  /* Set initial breadcrumb */
+  if (SITES[0]) document.getElementById('breadcrumbSite').textContent = SITES[0].name.toUpperCase();
+})();
+
+/* ---- Events data ---- */
+var EVENTS = [
+  { time: '08:22', type: 'imbalance', desc: 'L2 phase current exceeded L1/L3 average by >20%', duration: 'Ongoing', status: 'Active' },
+  { time: '12:34', type: 'large-load', desc: 'Demand spike: EV charger Bay 1 connected at 22 kW', duration: '1h 14m', status: 'Resolved' },
+  { time: '13:08', type: 'overload', desc: 'Supply utilisation reached 87% — 209 kW on 240 kVA fuse', duration: '4 min', status: 'Resolved' },
+  { time: '07:00', type: 'large-load', desc: 'HVAC Main Hall scheduled start — 35 kW step load', duration: 'Continuous', status: 'Resolved' }
+];
+
+function renderEventsTable() {
+  var tb = document.getElementById('eventsBody');
+  tb.innerHTML = '';
+  EVENTS.forEach(function (ev) {
+    var typeClass = ev.type;
+    var statusHtml = ev.status === 'Active'
+      ? '<span class="event-type overload">' + ev.status + '</span>'
+      : '<span style="font-size:11px;color:var(--muted);font-weight:600;">' + ev.status + '</span>';
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="font-size:12px;font-weight:700;color:var(--charcoal);white-space:nowrap;">' + ev.time + '</td>' +
+      '<td><span class="event-type ' + typeClass + '">' + ev.type.replace('-', ' ') + '</span></td>' +
+      '<td style="font-size:12px;color:var(--charcoal);">' + ev.desc + '</td>' +
+      '<td style="font-size:12px;color:var(--muted);white-space:nowrap;">' + ev.duration + '</td>' +
+      '<td>' + statusHtml + '</td>';
+    tb.appendChild(tr);
+  });
+}
+
+/* ---- Main render ---- */
+function render() {
+  var rand = seeded(currentSiteId * 31 + 7);
+
+  var phases = phaseData(rand, 35, 1.27);
+  var halfLabels = halfHourLabels();
+
+  /* Phase chart */
+  if (phaseChartInst) phaseChartInst.destroy();
+  var phaseCtx = document.getElementById('phaseChart').getContext('2d');
+  phaseChartInst = new Chart(phaseCtx, {
+    type: 'line',
+    data: {
+      labels: halfLabels,
+      datasets: [
+        {
+          label: 'L1', data: phases.l1,
+          borderColor: RUST, backgroundColor: 'transparent',
+          borderWidth: 1.5, pointRadius: 0, tension: 0.4
+        },
+        {
+          label: 'L2', data: phases.l2,
+          borderColor: SAPPHIRE, backgroundColor: 'transparent',
+          borderWidth: 2, pointRadius: 0, tension: 0.4
+        },
+        {
+          label: 'L3', data: phases.l3,
+          borderColor: STEEL, backgroundColor: 'transparent',
+          borderWidth: 1.5, pointRadius: 0, tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: textColour(), font: { size: 11, weight: '700' }, boxWidth: 18, padding: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) { return ctx.dataset.label + ': ' + Math.round(ctx.raw) + ' A'; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColour() },
+          ticks: {
+            color: textColour(), font: { size: 10 }, maxTicksLimit: 12,
+            callback: function (val, idx) { return idx % 4 === 0 ? halfLabels[idx] : ''; }
+          }
+        },
+        y: {
+          grid: { color: gridColour() },
+          ticks: { color: textColour(), font: { size: 10 },
+            callback: function (v) { return v + ' A'; }
+          },
+          title: { display: false }
+        }
+      }
+    }
+  });
+
+  /* Supply capacity chart */
+  var rand2 = seeded(currentSiteId * 17 + 3);
+  var supplyKw = loadProfile(rand2, 80, 60, 50);
+  var limitLine = supplyKw.map(function () { return 240; });
+  var hourLbls = hourLabels();
+
+  if (supplyChartInst) supplyChartInst.destroy();
+  var supplyCtx = document.getElementById('supplyChart').getContext('2d');
+  var gradientFill = supplyCtx.createLinearGradient(0, 0, 0, 180);
+  gradientFill.addColorStop(0, 'rgba(236,95,48,0.18)');
+  gradientFill.addColorStop(1, 'rgba(236,95,48,0.01)');
+
+  supplyChartInst = new Chart(supplyCtx, {
+    type: 'line',
+    data: {
+      labels: hourLbls,
+      datasets: [
+        {
+          label: 'Demand (kW)', data: supplyKw,
+          borderColor: RUST, backgroundColor: gradientFill,
+          borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true
+        },
+        {
+          label: 'Connection limit (kVA)', data: limitLine,
+          borderColor: CHARCOAL, backgroundColor: 'transparent',
+          borderWidth: 1.5, pointRadius: 0, borderDash: [6, 4]
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: textColour(), font: { size: 11, weight: '700' }, boxWidth: 18, padding: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              return ctx.dataset.label + ': ' + Math.round(ctx.raw) + (ctx.datasetIndex === 1 ? ' kVA' : ' kW');
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColour() },
+          ticks: { color: textColour(), font: { size: 10 }, maxTicksLimit: 12 }
+        },
+        y: {
+          grid: { color: gridColour() },
+          min: 0,
+          ticks: { color: textColour(), font: { size: 10 },
+            callback: function (v) { return v + ' kW'; }
+          }
+        }
+      }
+    }
+  });
+
+  /* Load profile stacked chart */
+  var rand3 = seeded(currentSiteId * 11 + 99);
+  var hvac   = loadProfile(rand3, 20, 28, 12);
+  var ev     = loadProfile(rand3, 0, 12, 25);
+  var proc   = loadProfile(rand3, 15, 18, 8);
+  var light  = loadProfile(rand3, 5, 8, 2);
+
+  if (loadChartInst) loadChartInst.destroy();
+  var loadCtx = document.getElementById('loadChart').getContext('2d');
+  loadChartInst = new Chart(loadCtx, {
+    type: 'bar',
+    data: {
+      labels: hourLbls,
+      datasets: [
+        { label: 'HVAC',          data: hvac,  backgroundColor: HVAC_C,  stack: 'load', barPercentage: 0.9 },
+        { label: 'EV Charging',   data: ev,    backgroundColor: EV_C,   stack: 'load', barPercentage: 0.9 },
+        { label: 'Process loads', data: proc,  backgroundColor: PROC_C, stack: 'load', barPercentage: 0.9 },
+        { label: 'Lighting / other', data: light, backgroundColor: LIGHT_C, stack: 'load', barPercentage: 0.9 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: textColour(), font: { size: 11, weight: '700' }, boxWidth: 14, padding: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              return ctx.dataset.label + ': ' + Math.round(ctx.raw) + ' kW';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { color: gridColour() },
+          ticks: { color: textColour(), font: { size: 10 }, maxTicksLimit: 12 }
+        },
+        y: {
+          stacked: true,
+          grid: { color: gridColour() },
+          min: 0,
+          ticks: { color: textColour(), font: { size: 10 },
+            callback: function (v) { return v + ' kW'; }
+          }
+        }
+      }
+    }
+  });
+
+  renderEventsTable();
+}
+
+/* ---- Period tab ---- */
+function setPeriod(btn, period) {
+  document.querySelectorAll('.period-tab').forEach(function (b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  /* In a real app this would re-fetch or re-slice data; here we just re-render with same shape */
+  render();
+}
+
+/* ---- Shared JS: theme + sidebar ---- */
+document.getElementById('themeToggle').addEventListener('click', function () {
+  var html = document.documentElement;
+  var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  try { localStorage.setItem('flex-theme', next); } catch (e) {}
+  DARK = next === 'dark';
+  render();
+});
+
+(function () {
+  var menuBtn = document.getElementById('menuBtn');
+  var sidebar = document.getElementById('sidebar');
+  var backdrop = document.getElementById('sidebarBackdrop');
+  var closeBtn = document.getElementById('sidebarClose');
+  function openSidebar()  { sidebar.classList.add('is-open'); backdrop.classList.add('is-visible'); }
+  function closeSidebar() { sidebar.classList.remove('is-open'); backdrop.classList.remove('is-visible'); }
+  menuBtn.addEventListener('click', openSidebar);
+  closeBtn.addEventListener('click', closeSidebar);
+  backdrop.addEventListener('click', closeSidebar);
+})();
+
+(function () {
+  var page = document.body.getAttribute('data-page');
+  document.querySelectorAll('[data-nav]').forEach(function (el) {
+    if (el.getAttribute('data-nav') === page) el.classList.add('is-active');
+  });
+})();
+
+/* ---- Boot ---- */
+render();
+</script>
+</body>
+</html>

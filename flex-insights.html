@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flex:Insights &mdash; Blackcurrent</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+
+  <style>
+    /* ---- Filter bar ---- */
+    .filter-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .filter-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); margin-right: 4px;
+    }
+    .filter-btn {
+      padding: 6px 14px; border: 1px solid var(--line-strong); border-radius: 99px;
+      font-family: inherit; font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+      cursor: pointer; background: var(--white); color: var(--muted);
+      transition: background 0.1s, color 0.1s, border-color 0.1s;
+    }
+    .filter-btn.active { background: var(--charcoal); color: var(--egg); border-color: var(--charcoal); }
+    .filter-btn:hover:not(.active) { border-color: var(--charcoal); color: var(--charcoal); }
+
+    /* ---- Insight cards ---- */
+    .insight-feed { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+
+    .insight-card {
+      border: 1px solid var(--line); border-radius: 4px; overflow: hidden;
+      background: var(--white); transition: border-color 0.15s;
+    }
+    .insight-card:hover { border-color: var(--charcoal); }
+    .insight-card.priority-high  { border-left: 3px solid var(--rust); }
+    .insight-card.priority-med   { border-left: 3px solid #e8a730; }
+    .insight-card.priority-low   { border-left: 3px solid var(--steel); }
+    .insight-card.is-acted { opacity: 0.65; }
+
+    .insight-head {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px 20px 0;
+    }
+    .insight-meta { flex: 1; min-width: 0; }
+    .insight-tags { display: flex; gap: 6px; align-items: center; margin-bottom: 7px; flex-wrap: wrap; }
+    .insight-cat {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 2px;
+    }
+    .insight-cat.performance { background: rgba(85,151,209,.10); color: var(--sapphire); border: 1px solid rgba(85,151,209,.22); }
+    .insight-cat.cost        { background: rgba(42,138,78,.10); color: #2a8a4e; border: 1px solid rgba(42,138,78,.22); }
+    .insight-cat.operational { background: rgba(236,95,48,.10); color: var(--rust); border: 1px solid rgba(236,95,48,.22); }
+    .insight-cat.maintenance { background: rgba(162,160,158,.15); color: var(--steel); border: 1px solid rgba(162,160,158,.3); }
+
+    .insight-priority {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 2px;
+    }
+    .insight-priority.high { background: rgba(236,95,48,.10); color: var(--rust); }
+    .insight-priority.med  { background: rgba(232,167,48,.12); color: #9a7200; }
+    .insight-priority.low  { background: rgba(162,160,158,.12); color: var(--steel); }
+
+    .insight-age { font-size: 10px; color: var(--muted); font-weight: 500; margin-left: auto; flex-shrink: 0; }
+
+    .insight-title {
+      font-size: 15px; font-weight: 800; color: var(--charcoal);
+      letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 2px;
+    }
+
+    .insight-body { padding: 10px 20px 0; }
+    .insight-what {
+      font-size: 12px; color: var(--charcoal); font-weight: 600; line-height: 1.6;
+    }
+    .insight-why {
+      font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 4px; line-height: 1.6;
+    }
+
+    .insight-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; gap: 12px;
+    }
+    .insight-action-btn {
+      padding: 8px 16px; border: none; border-radius: 3px;
+      font-family: inherit; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    .insight-action-btn.primary { background: var(--charcoal); color: var(--egg); }
+    .insight-action-btn.primary:hover { opacity: 0.82; }
+    .insight-action-btn.secondary {
+      background: transparent; border: 1px solid var(--line-strong); color: var(--muted);
+    }
+    .insight-action-btn.secondary:hover { border-color: var(--charcoal); color: var(--charcoal); }
+    .insight-acted-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      color: #2a8a4e; padding: 8px 0;
+    }
+
+    /* ---- History section ---- */
+    .history-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .history-table th {
+      text-align: left; padding: 8px 16px;
+      font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--line);
+    }
+    .history-table td {
+      padding: 10px 16px; border-bottom: 1px solid var(--line);
+      vertical-align: middle; color: var(--charcoal);
+    }
+    .history-table tr:last-child td { border-bottom: none; }
+
+    /* ---- Empty state ---- */
+    .empty-state {
+      padding: 40px 20px; text-align: center; color: var(--muted);
+      font-size: 13px; font-weight: 500; display: none;
+    }
+    .empty-state strong { display: block; font-size: 16px; font-weight: 800; color: var(--charcoal); margin-bottom: 6px; }
+
+    /* ---- Dark mode ---- */
+    [data-theme="dark"] .filter-btn { background: #1c1a17; color: var(--muted); border-color: #443f37; }
+    [data-theme="dark"] .filter-btn.active { background: #e8e3d6; color: #0a0907; border-color: #e8e3d6; }
+    [data-theme="dark"] .filter-btn:hover:not(.active) { border-color: #e8e3d6; color: #e8e3d6; }
+    [data-theme="dark"] .insight-card { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .insight-card:hover { border-color: #6a6560; }
+    [data-theme="dark"] .insight-title { color: #e8e3d6; }
+    [data-theme="dark"] .insight-what { color: #c8c3b8; }
+    [data-theme="dark"] .insight-action-btn.primary { background: #e8e3d6; color: #0a0907; }
+    [data-theme="dark"] .insight-action-btn.secondary { border-color: #443f37; }
+    [data-theme="dark"] .insight-action-btn.secondary:hover { border-color: #e8e3d6; color: #e8e3d6; }
+    [data-theme="dark"] .history-table th { background: #1c1a17; border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .history-table td { border-bottom-color: #2e2a25; color: #c8c3b8; }
+    [data-theme="dark"] .empty-state strong { color: #c8c3b8; }
+
+    /* ---- Mobile ---- */
+    @media (max-width: 640px) {
+      .insight-foot { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+
+<body data-page="insights">
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio - Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="flex-simulator.html">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Help</div>
+        <a class="nav-item" data-nav="faq" href="flex-faq.html">FAQ</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">PLATFORM / <strong>INSIGHTS</strong></div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/><line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/></svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE CONTENT ============ -->
+      <main class="page">
+
+        <header class="page-head">
+          <div>
+            <h1>Flex:Insights</h1>
+            <p class="page-sub">Actionable recommendations from your site&rsquo;s energy data.</p>
+          </div>
+          <span class="module-tag">Optimise</span>
+        </header>
+
+        <!-- stat tiles -->
+        <div class="coverage" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stat rows">
+            <div class="lbl">Open insights</div>
+            <div class="val" id="tileOpen">5</div>
+            <div class="sub">across all categories</div>
+          </div>
+          <div class="stat actual">
+            <div class="lbl">High priority</div>
+            <div class="val" id="tileHigh" style="color:var(--rust);">2</div>
+            <div class="sub">require attention</div>
+          </div>
+          <div class="stat">
+            <div class="lbl">Acted on (30 days)</div>
+            <div class="val" id="tileActed">3</div>
+            <div class="sub">recommendations followed</div>
+          </div>
+          <div class="stat estimated">
+            <div class="lbl">Est. value identified</div>
+            <div class="val" id="tileValue" style="color:#2a8a4e;font-size:22px;">$6,100</div>
+            <div class="sub">in open savings opportunities</div>
+          </div>
+        </div>
+
+      <!-- filter bar -->
+      <div class="filter-bar">
+        <span class="filter-label">Filter:</span>
+        <button class="filter-btn active" onclick="setFilter(this,'all')">All</button>
+        <button class="filter-btn" onclick="setFilter(this,'cost')">Cost</button>
+        <button class="filter-btn" onclick="setFilter(this,'performance')">Performance</button>
+        <button class="filter-btn" onclick="setFilter(this,'operational')">Operational</button>
+        <button class="filter-btn" onclick="setFilter(this,'maintenance')">Maintenance</button>
+      </div>
+
+      <!-- insight feed -->
+      <div class="insight-feed" id="insightFeed"></div>
+      <div class="empty-state" id="emptyState">
+        <strong>No insights in this category</strong>
+        All insights for this filter have been resolved.
+      </div>
+
+      <!-- history section -->
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 12px;border-bottom:1px solid var(--line);">
+          <span style="font-size:13px;font-weight:800;letter-spacing:-0.01em;color:var(--charcoal);">Insight history</span>
+          <span style="font-size:11px;color:var(--muted);font-weight:600;">Last 90 days</span>
+        </div>
+        <div style="padding:0;">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Insight</th>
+                <th>Category</th>
+                <th>Outcome</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      </main>
+    </section>
+  </div>
+</div>
+
+<div id="flexModalContainer"></div>
+
+<script src="data/sites_and_customers.js"></script>
+<script src="assets/flex-platform.js"></script>
+
+<script>
+/* =========================================================
+   Flex:Insights — page logic
+   ========================================================= */
+
+var DARK = document.documentElement.getAttribute('data-theme') === 'dark';
+
+/* ---- Insight definitions ---- */
+var INSIGHTS = [
+  {
+    id: 'tariff-align',
+    priority: 'high',
+    category: 'cost',
+    title: 'Tariff misalignment detected',
+    what: 'Your site draws 68% of its grid consumption during off-peak hours — but your current flat-rate tariff charges 28 c/kWh regardless of time. A Time-of-Use tariff would charge 18 c/kWh during those same hours.',
+    why: 'Switching to a Time-of-Use tariff is estimated to save $4,210 per year based on the last 12 months of interval data.',
+    action: { label: 'Compare tariffs', href: 'flex-tariff.html' },
+    age: '2 days ago',
+    acted: false
+  },
+  {
+    id: 'battery-schedule',
+    priority: 'high',
+    category: 'operational',
+    title: 'Battery missing cheap charge window',
+    what: 'On 14 of the last 21 days, the battery was not fully charged by 7am — the start of the peak tariff period. Off-peak charging capacity is being left unused between midnight and 5am.',
+    why: 'Adjusting the charge schedule to cover the full overnight off-peak window would add approximately 18 kWh of cheap charge per day.',
+    action: { label: 'Adjust schedule', href: 'flex-schedule.html' },
+    age: '5 days ago',
+    acted: false
+  },
+  {
+    id: 'self-consume',
+    priority: 'med',
+    category: 'cost',
+    title: 'Self-consumption opportunity — midday export',
+    what: 'Between 10am and 2pm on average weekdays, your site is exporting 12–18 kW to the grid while simultaneously drawing 8–10 kW for HVAC loads. The battery could serve those loads from stored generation instead.',
+    why: 'Reducing export and increasing self-consumption at current export vs. import rates could save ~$1,890 / year.',
+    action: { label: 'Review schedule', href: 'flex-schedule.html' },
+    age: '1 week ago',
+    acted: false
+  },
+  {
+    id: 'load-spike',
+    priority: 'med',
+    category: 'operational',
+    title: 'Recurring morning load spike',
+    what: 'A consistent 35–40 kW step-load occurs at 7:00–7:05am on school days, coinciding with HVAC start-up in the main hall and admin block simultaneously.',
+    why: 'Staggering HVAC start times by 10 minutes would reduce the peak demand event without affecting comfort. This may also reduce demand charge exposure if on a demand tariff.',
+    action: { label: 'View load detail', href: 'flex-load-monitoring.html' },
+    age: '1 week ago',
+    acted: false
+  },
+  {
+    id: 'gen-underperform',
+    priority: 'low',
+    category: 'performance',
+    title: 'Generation 11% below forecast — last 14 days',
+    what: 'Solar generation has averaged 38 kWh/day over the past two weeks against a modelled forecast of 43 kWh/day. The shortfall is consistent across all daylight hours, not limited to particular times.',
+    why: 'A 10%+ sustained underperformance for this duration warrants a check. Possible causes: panel soiling, shading from seasonal tree growth, or inverter clipping.',
+    action: { label: 'Check Flex:Assure', href: '#' },
+    age: '2 weeks ago',
+    acted: false
+  }
+];
+
+var HISTORY = [
+  { date: '14 Apr', title: 'Phase L2 imbalance flagged', cat: 'operational', outcome: 'Electrician visit scheduled — L2 load redistributed' },
+  { date: '2 Apr',  title: 'Tariff comparison recommended',  cat: 'cost',        outcome: 'Under review with site owner' },
+  { date: '22 Mar', title: 'Battery schedule optimised',     cat: 'operational', outcome: 'Charge window extended to 00:00–06:00. Saving confirmed.' },
+  { date: '8 Mar',  title: 'EV charger left on overnight',   cat: 'operational', outcome: 'Schedule rule added via Flex:Control' },
+  { date: '1 Mar',  title: 'Generation within tolerance',    cat: 'performance', outcome: 'No action required — monitoring ongoing' }
+];
+
+var currentFilter = 'all';
+var actedSet = {};
+
+function setFilter(btn, filter) {
+  document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  currentFilter = filter;
+  renderFeed();
+}
+
+function renderFeed() {
+  var feed = document.getElementById('insightFeed');
+  var empty = document.getElementById('emptyState');
+  feed.innerHTML = '';
+  var visible = INSIGHTS.filter(function (i) {
+    return currentFilter === 'all' || i.category === currentFilter;
+  });
+  if (!visible.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  visible.forEach(function (ins) {
+    var acted = !!actedSet[ins.id];
+    var card = document.createElement('div');
+    card.className = 'insight-card priority-' + ins.priority + (acted ? ' is-acted' : '');
+    card.innerHTML =
+      '<div class="insight-head">' +
+        '<div class="insight-meta">' +
+          '<div class="insight-tags">' +
+            '<span class="insight-cat ' + ins.category + '">' + ins.category + '</span>' +
+            '<span class="insight-priority ' + ins.priority + '">' + ins.priority + ' priority</span>' +
+            '<span class="insight-age">' + ins.age + '</span>' +
+          '</div>' +
+          '<div class="insight-title">' + ins.title + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="insight-body">' +
+        '<div class="insight-what">' + ins.what + '</div>' +
+        '<div class="insight-why"><strong>Why it matters:</strong> ' + ins.why + '</div>' +
+      '</div>' +
+      '<div class="insight-foot">' +
+        (acted
+          ? '<span class="insight-acted-label">&#10003; Marked as acted on</span>'
+          : '<div style="display:flex;gap:8px;">' +
+              '<a href="' + ins.action.href + '" style="text-decoration:none;">' +
+                '<button class="insight-action-btn primary">' + ins.action.label + '</button>' +
+              '</a>' +
+              '<button class="insight-action-btn secondary" onclick="markActed(\'' + ins.id + '\')">Mark as acted on</button>' +
+            '</div>'
+        ) +
+        (acted ? '' : '<button class="insight-action-btn secondary" onclick="dismissInsight(\'' + ins.id + '\')">Dismiss</button>') +
+      '</div>';
+    feed.appendChild(card);
+  });
+}
+
+function markActed(id) {
+  actedSet[id] = true;
+  var actedCount = Object.keys(actedSet).length;
+  document.getElementById('tileActed').textContent = 3 + actedCount;
+  renderFeed();
+}
+
+function dismissInsight(id) {
+  INSIGHTS = INSIGHTS.filter(function (i) { return i.id !== id; });
+  var open = INSIGHTS.filter(function (i) { return !actedSet[i.id]; });
+  document.getElementById('tileOpen').textContent = open.length;
+  document.getElementById('tileHigh').textContent = open.filter(function (i) { return i.priority === 'high'; }).length;
+  renderFeed();
+}
+
+function renderHistory() {
+  var body = document.getElementById('historyBody');
+  body.innerHTML = '';
+  HISTORY.forEach(function (h) {
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="white-space:nowrap;font-weight:700;color:var(--muted);">' + h.date + '</td>' +
+      '<td style="font-weight:600;">' + h.title + '</td>' +
+      '<td><span class="insight-cat ' + h.cat + '" style="font-size:9px;">' + h.cat + '</span></td>' +
+      '<td style="color:var(--muted);font-size:11px;">' + h.outcome + '</td>';
+    body.appendChild(tr);
+  });
+}
+
+/* ---- Theme + sidebar ---- */
+document.getElementById('themeToggle').addEventListener('click', function () {
+  var html = document.documentElement;
+  var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  try { localStorage.setItem('flex-theme', next); } catch (e) {}
+  DARK = next === 'dark';
+});
+
+(function () {
+  var menuBtn  = document.getElementById('menuBtn');
+  var sidebar  = document.getElementById('sidebar');
+  var backdrop = document.getElementById('sidebarBackdrop');
+  var closeBtn = document.getElementById('sidebarClose');
+  function openSidebar()  { sidebar.classList.add('is-open'); backdrop.classList.add('is-visible'); }
+  function closeSidebar() { sidebar.classList.remove('is-open'); backdrop.classList.remove('is-visible'); }
+  menuBtn.addEventListener('click', openSidebar);
+  closeBtn.addEventListener('click', closeSidebar);
+  backdrop.addEventListener('click', closeSidebar);
+})();
+
+(function () {
+  var page = document.body.getAttribute('data-page');
+  document.querySelectorAll('[data-nav]').forEach(function (el) {
+    if (el.getAttribute('data-nav') === page) el.classList.add('is-active');
+  });
+})();
+
+/* ---- Boot ---- */
+renderFeed();
+renderHistory();
+</script>
+</body>
+</html>

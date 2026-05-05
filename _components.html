@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<!--
+  Flex Platform — components reference
+  Live preview + copy-paste markup for every shared component.
+  Open this page when building a new feature; pull what you need.
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Components &mdash; Flex Platform</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+</head>
+<body data-page="components">
+
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Reference</div>
+        <a class="nav-item active" href="_components.html">Components</a>
+        <a class="nav-item" href="_template.html">Page template</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Pages</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">FLEX PLATFORM / <strong>COMPONENTS</strong></div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/>
+              <line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/>
+              <line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/>
+              <line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/>
+            </svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <main class="page">
+
+        <header class="page-head">
+          <span class="module-tag">Reference</span>
+          <h1>Flex Platform &mdash; Components</h1>
+          <p class="page-sub">Every shared component, with the markup to copy. Theme-aware: try the toggle in the topbar.</p>
+        </header>
+
+        <!-- =========================================== -->
+        <!-- Section: Page head -->
+        <div class="component-row">
+          <div class="name">Page head</div>
+          <div class="desc">Title, optional module tag, and one-line subhead. Lives at the top of every page.</div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="page-head" style="margin: 0;">
+              <span class="module-tag">Flex:Tariff</span>
+              <h1>Tariff Optimisation</h1>
+              <p class="page-sub">Compare current tariff to alternatives based on real consumption.</p>
+            </div>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;header class="page-head"&gt;
+  &lt;span class="module-tag"&gt;Flex:Tariff&lt;/span&gt;
+  &lt;h1&gt;Tariff Optimisation&lt;/h1&gt;
+  &lt;p class="page-sub"&gt;Compare current tariff to alternatives…&lt;/p&gt;
+&lt;/header&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Card -->
+        <div class="component-row">
+          <div class="name">Card</div>
+          <div class="desc">Primary content container. Supports a header row with optional step indicator.</div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2>Card heading</h2>
+            <span class="step">Step 1 of 2</span>
+          </div>
+          <div class="card-body">
+            <p>Card body content goes here. Cards stack vertically with consistent spacing.</p>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;div class="card"&gt;
+  &lt;div class="card-head"&gt;
+    &lt;h2&gt;Card heading&lt;/h2&gt;
+    &lt;span class="step"&gt;Step 1 of 2&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="card-body"&gt;
+    &lt;p&gt;Card body content&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Form fields -->
+        <div class="component-row">
+          <div class="name">Form fields</div>
+          <div class="desc">Two-column form grid. Use <code>.span-2</code> on a field to span the full width.</div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="field">
+                <label for="example-select">Select</label>
+                <select class="select" id="example-select">
+                  <option>Option A</option>
+                  <option>Option B</option>
+                </select>
+                <div class="helper">Helper text sits below.</div>
+              </div>
+              <div class="field">
+                <label for="example-text">Text input</label>
+                <input class="input" id="example-text" type="text" placeholder="Enter a value" />
+                <div class="helper">Plain text input.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;div class="form-grid"&gt;
+  &lt;div class="field"&gt;
+    &lt;label for="x"&gt;Select&lt;/label&gt;
+    &lt;select class="select" id="x"&gt;…&lt;/select&gt;
+    &lt;div class="helper"&gt;Helper text&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="field span-2"&gt;…full-width field…&lt;/div&gt;
+&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Date range + presets -->
+        <div class="component-row">
+          <div class="name">Date range &amp; presets</div>
+          <div class="desc">Paired date inputs with quick-select chips. Used for any time-window picker.</div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="daterange">
+              <div class="seg">
+                <span class="micro">From</span>
+                <input type="date" value="2026-01-01" />
+              </div>
+              <div class="arrow">&rarr;</div>
+              <div class="seg">
+                <span class="micro">To</span>
+                <input type="date" value="2026-04-30" />
+              </div>
+            </div>
+            <div class="presets" style="margin-top: 12px;">
+              <span class="preset">Last 30 days</span>
+              <span class="preset">Last 12 months</span>
+              <span class="preset active">YTD</span>
+              <span class="preset">All time</span>
+            </div>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;div class="daterange"&gt;
+  &lt;div class="seg"&gt;&lt;span class="micro"&gt;From&lt;/span&gt;&lt;input type="date"&gt;&lt;/div&gt;
+  &lt;div class="arrow"&gt;&rarr;&lt;/div&gt;
+  &lt;div class="seg"&gt;&lt;span class="micro"&gt;To&lt;/span&gt;&lt;input type="date"&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="presets"&gt;
+  &lt;span class="preset active"&gt;YTD&lt;/span&gt;
+  &lt;span class="preset"&gt;All time&lt;/span&gt;
+&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Radio cards -->
+        <div class="component-row">
+          <div class="name">Radio cards</div>
+          <div class="desc">Mutually-exclusive choice with title + description. Click anywhere on a card to select it.</div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="radios">
+              <div class="radio selected">
+                <div class="dot-outer"></div>
+                <div class="label-block">
+                  <div class="name">CSV</div>
+                  <div class="desc">Comma-delimited, dot decimal.</div>
+                </div>
+              </div>
+              <div class="radio">
+                <div class="dot-outer"></div>
+                <div class="label-block">
+                  <div class="name">XLSX</div>
+                  <div class="desc">Excel workbook with metadata sheet.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;div class="radios"&gt;
+  &lt;div class="radio selected" data-format="csv"&gt;
+    &lt;div class="dot-outer"&gt;&lt;/div&gt;
+    &lt;div class="label-block"&gt;
+      &lt;div class="name"&gt;CSV&lt;/div&gt;
+      &lt;div class="desc"&gt;Comma-delimited, dot decimal.&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Buttons -->
+        <div class="component-row">
+          <div class="name">Buttons</div>
+          <div class="desc">Primary for the main action; default for secondary actions. Pair them with <code>.actions</code>.</div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="actions">
+              <button class="btn">Cancel</button>
+              <button class="btn primary">Submit <span class="arrow">&rarr;</span></button>
+            </div>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;div class="actions"&gt;
+  &lt;button class="btn"&gt;Cancel&lt;/button&gt;
+  &lt;button class="btn primary"&gt;Submit&lt;/button&gt;
+&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Stat tiles -->
+        <div class="component-row">
+          <div class="name">Stat tiles</div>
+          <div class="desc">Four-column grid of summary numbers. Drops to one column on mobile.</div>
+        </div>
+        <div class="coverage">
+          <div class="stat">
+            <div class="label">Sites</div>
+            <div class="value">12</div>
+            <div class="sub">10 connected</div>
+          </div>
+          <div class="stat">
+            <div class="label">24h kWh</div>
+            <div class="value">14,237</div>
+            <div class="sub">+3.2% vs prior day</div>
+          </div>
+          <div class="stat">
+            <div class="label">Active flex</div>
+            <div class="value">3</div>
+            <div class="sub">7 scheduled today</div>
+          </div>
+          <div class="stat">
+            <div class="label">Data quality</div>
+            <div class="value">98.4%</div>
+            <div class="sub">Past 7 days</div>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;div class="coverage"&gt;
+  &lt;div class="stat"&gt;
+    &lt;div class="label"&gt;Sites&lt;/div&gt;
+    &lt;div class="value"&gt;12&lt;/div&gt;
+    &lt;div class="sub"&gt;10 connected&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;!-- repeat… --&gt;
+&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Flag badges -->
+        <div class="component-row">
+          <div class="name">Flag badges</div>
+          <div class="desc">Small status pills. Six variants &mdash; pick the one that maps to the meaning.</div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <span class="flag actual">Actual</span>
+            <span class="flag estimated">Estimated</span>
+            <span class="flag missing">Missing</span>
+            <span class="flag ok">Online</span>
+            <span class="flag warn">Stale</span>
+            <span class="flag fault">Offline</span>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;span class="flag actual"&gt;Actual&lt;/span&gt;
+&lt;span class="flag estimated"&gt;Estimated&lt;/span&gt;
+&lt;span class="flag missing"&gt;Missing&lt;/span&gt;
+&lt;span class="flag ok"&gt;Online&lt;/span&gt;
+&lt;span class="flag warn"&gt;Stale&lt;/span&gt;
+&lt;span class="flag fault"&gt;Offline&lt;/span&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Preview table -->
+        <div class="component-row">
+          <div class="name">Preview table</div>
+          <div class="desc">Tabular data with right-aligned numerics. Wrap in <code>.table-wrap</code> for horizontal scroll on mobile.</div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="table-wrap">
+              <table class="preview">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th class="num">Value</th>
+                    <th>Quality</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>2026-04-30 09:00</td><td class="num">1.234</td><td><span class="flag actual">Actual</span></td></tr>
+                  <tr><td>2026-04-30 09:30</td><td class="num">1.187</td><td><span class="flag actual">Actual</span></td></tr>
+                  <tr><td>2026-04-30 10:00</td><td class="num">1.402</td><td><span class="flag estimated">Estimated</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;div class="table-wrap"&gt;
+  &lt;table class="preview"&gt;
+    &lt;thead&gt;&lt;tr&gt;&lt;th&gt;Timestamp&lt;/th&gt;&lt;th class="num"&gt;Value&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+    &lt;tbody&gt;…&lt;/tbody&gt;
+  &lt;/table&gt;
+&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Empty state + stale banner -->
+        <div class="component-row">
+          <div class="name">Empty state &amp; stale banner</div>
+          <div class="desc">Use the empty state for "nothing to show yet" panels; the stale banner appears above results when inputs change.</div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="preview-empty">
+              <div class="big">Nothing to show yet</div>
+              <div>Pick options above and click Preview.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="stale-banner show">Selections changed &mdash; click Preview to refresh.</div>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;div class="preview-empty"&gt;
+  &lt;div class="big"&gt;Nothing to show yet&lt;/div&gt;
+  &lt;div&gt;Pick options above and click Preview.&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="stale-banner show"&gt;Selections changed&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Recent table -->
+        <div class="component-row">
+          <div class="name">Recent activity table</div>
+          <div class="desc">Compact log-style table for activity history. Lighter visual weight than the preview table.</div>
+        </div>
+        <div class="recent">
+          <div class="recent-head">Recent items</div>
+          <table>
+            <thead>
+              <tr><th>When</th><th>What</th><th>By</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr><td>02 Apr 2026 &middot; 16:42</td><td>Export generated</td><td>Paddy Urlich</td><td><a>Open</a></td></tr>
+              <tr><td>14 Mar 2026 &middot; 11:08</td><td>Tariff updated</td><td>Matt Strik</td><td><a>Open</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+<pre class="code-snippet">&lt;div class="recent"&gt;
+  &lt;div class="recent-head"&gt;Recent items&lt;/div&gt;
+  &lt;table&gt;…&lt;/table&gt;
+&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Meta block -->
+        <div class="component-row">
+          <div class="name">Meta key/value block</div>
+          <div class="desc">Monospace summary block for export metadata or any key/value listing.</div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="meta">
+              <div class="row"><span class="key">site</span><span class="val">Forest Lodge <span class="accent">// ICP 0001234567ABC9</span></span></div>
+              <div class="row"><span class="key">range</span><span class="val">2026-01-01 → 2026-04-30</span></div>
+              <div class="row"><span class="key">format</span><span class="val">CSV</span></div>
+            </div>
+          </div>
+        </div>
+<pre class="code-snippet">&lt;div class="meta"&gt;
+  &lt;div class="row"&gt;
+    &lt;span class="key"&gt;site&lt;/span&gt;
+    &lt;span class="val"&gt;Forest Lodge&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+
+        <!-- =========================================== -->
+        <!-- Section: Util reference -->
+        <div class="component-row">
+          <div class="name">JS utilities</div>
+          <div class="desc">Available on every page via <code>window.FlexUtil</code> from <code>flex-platform.js</code>.</div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+<pre class="code-snippet">FlexUtil.pad(n)            // "07"
+FlexUtil.ymd(date)         // "2026-04-30"
+FlexUtil.ymdhm(date)       // "2026-04-30 09:30"
+FlexUtil.dmy(date)         // "30/04/2026"
+FlexUtil.nzOffset(date)    // "+12:00" or "+13:00"
+FlexUtil.fmtNum(1234567)   // "1,234,567"
+FlexUtil.round3(1.23456)   // 1.235
+FlexUtil.fmtKwh(1.23456)   // "1.235"
+FlexUtil.escapeHtml(str)   // safe for innerHTML
+FlexUtil.seedRng(seed)     // returns a deterministic rand()</pre>
+          </div>
+        </div>
+
+      </main>
+
+      <div class="footer-lockup">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <div class="meta-text">Flex Platform &nbsp;&middot;&nbsp; Components reference</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="assets/flex-platform.js"></script>
+</body>
+</html>

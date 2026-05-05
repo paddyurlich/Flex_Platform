@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flex:Schedule &mdash; Blackcurrent</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+
+  <style>
+    /* ---- Asset tabs ---- */
+    .asset-tabs { display: flex; border-bottom: 2px solid var(--charcoal); margin-bottom: 20px; }
+    .asset-tab {
+      padding: 10px 20px; background: none; border: none;
+      font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      cursor: pointer; color: var(--muted); font-family: inherit;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+    }
+    .asset-tab.active { color: var(--charcoal); border-bottom-color: var(--rust); }
+    .asset-tab:hover:not(.active) { color: var(--charcoal); }
+
+    /* ---- Timeline ---- */
+    .timeline-controls {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
+    }
+    .tl-legend { display: flex; gap: 12px; flex-wrap: wrap; }
+    .tl-legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    /* ---- Mode info popup ---- */
+    .mode-info-btn {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 1.5px solid var(--line-strong); background: none;
+      cursor: pointer; color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      padding: 0; flex-shrink: 0;
+    }
+    .mode-info-btn:hover { border-color: var(--charcoal); color: var(--charcoal); }
+    .mode-info-btn svg { width: 13px; height: 13px; }
+    .mode-info-popup {
+      position: absolute; left: 0; top: calc(100% + 8px);
+      background: var(--white); border: 1px solid var(--line-strong);
+      border-radius: 6px; padding: 12px 14px; width: 300px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.10); z-index: 200;
+    }
+    .mode-info-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 13px; line-height: 1.55; color: var(--muted);
+      padding: 7px 0; border-bottom: 1px solid var(--line);
+    }
+    .mode-info-item:first-child { padding-top: 0; }
+    .mode-info-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .mode-info-item .tl-dot { margin-top: 4px; }
+    .mode-info-item strong { color: var(--charcoal); font-weight: 700; }
+    [data-theme="dark"] .mode-info-popup { background: #2d2a26; border-color: #443f37; box-shadow: 0 4px 20px rgba(0,0,0,0.35); }
+    [data-theme="dark"] .mode-info-item { border-bottom-color: #3a3530; }
+    [data-theme="dark"] .mode-info-item strong { color: #e8e3d6; }
+    [data-theme="dark"] .mode-info-btn { border-color: #443f37; }
+    [data-theme="dark"] .mode-info-btn:hover { border-color: #e8e3d6; color: #e8e3d6; }
+
+    .tl-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .tl-dot.charge        { background: var(--sapphire); }
+    .tl-dot.discharge     { background: var(--rust); }
+    .tl-dot.hold          { background: var(--steel); }
+    .tl-dot.self-consume  { background: #2a8a4e; }
+    [data-theme="dark"] .tl-dot.self-consume { background: #3dba6a; }
+
+    .timeline-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .timeline-inner { min-width: 560px; }
+
+    .hour-header { display: grid; grid-template-columns: 52px 1fr; margin-bottom: 6px; }
+    .hour-track  { position: relative; height: 16px; }
+    .hour-tick {
+      position: absolute; font-size: 9.5px; font-weight: 700;
+      color: var(--muted); letter-spacing: 0.04em;
+      transform: translateX(-50%); white-space: nowrap;
+    }
+
+    .tariff-header { display: grid; grid-template-columns: 52px 1fr; margin-bottom: 3px; }
+    .tariff-band-row { position: relative; height: 6px; border-radius: 2px; overflow: hidden; }
+    .tariff-band {
+      position: absolute; top: 0; height: 100%;
+      opacity: 0.35;
+    }
+    .tariff-band.offpeak { background: var(--sapphire); }
+    .tariff-band.peak    { background: var(--rust); }
+
+    .sched-row { display: grid; grid-template-columns: 52px 1fr; align-items: center; margin-bottom: 3px; }
+    .day-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted);
+      text-align: right; padding-right: 10px;
+    }
+    .sched-row.today .day-label { color: var(--rust); }
+    .sched-track {
+      position: relative; height: 34px;
+      background: var(--line); border-radius: 3px; overflow: hidden;
+    }
+    .sched-row.today .sched-track { outline: 2px solid var(--rust); outline-offset: 0; }
+
+    .sched-block {
+      position: absolute; top: 3px; height: calc(100% - 6px);
+      border-radius: 2px; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; white-space: nowrap;
+      transition: filter 0.1s;
+    }
+    .sched-block:hover { filter: brightness(1.08); }
+    .sched-block.charge        { background: var(--sapphire); color: var(--white); }
+    .sched-block.discharge     { background: var(--rust); color: var(--charcoal); }
+    .sched-block.hold          { background: var(--steel); color: var(--white); }
+    .sched-block.self-consume  { background: #2a8a4e; color: var(--white); }
+
+    .tariff-overlay {
+      position: absolute; top: 0; bottom: 0;
+      pointer-events: none; z-index: 1; opacity: 0.07;
+    }
+    .tariff-overlay.peak    { background: var(--rust); }
+    .tariff-overlay.offpeak { background: var(--sapphire); }
+
+    .now-line {
+      position: absolute; top: 0; bottom: 0; width: 2px;
+      background: var(--rust); z-index: 10; pointer-events: none;
+    }
+    .now-line::before {
+      content: ''; position: absolute; top: -4px; left: -4px;
+      width: 10px; height: 10px; background: var(--rust); border-radius: 50%;
+    }
+
+    /* ---- Mode badge in stat tile ---- */
+    .mode-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 5px 12px 5px 8px; border-radius: 3px; margin-top: 4px;
+      font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .mode-badge .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .mode-badge.charge    { background: rgba(85,151,209,.12); color: var(--sapphire); }
+    .mode-badge.charge .dot { background: var(--sapphire); }
+    .mode-badge.discharge { background: rgba(236,95,48,.12);  color: var(--rust); }
+    .mode-badge.discharge .dot { background: var(--rust); }
+    .mode-badge.hold      { background: rgba(162,160,158,.15); color: var(--steel); }
+    .mode-badge.hold .dot { background: var(--steel); }
+    .mode-badge.self-consume      { background: rgba(42,138,78,.12); color: #2a8a4e; }
+    .mode-badge.self-consume .dot { background: #2a8a4e; }
+
+    /* ---- Add block form ---- */
+    .day-checks { display: flex; gap: 6px; flex-wrap: wrap; }
+    .day-check input[type="checkbox"] { display: none; }
+    .day-check label {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 38px; height: 34px;
+      border: 1px solid var(--line-strong); border-radius: 3px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; margin: 0; color: var(--muted); background: var(--white);
+      transition: background 0.1s, color 0.1s, border-color 0.1s;
+    }
+    .day-check input:checked + label { background: var(--charcoal); color: var(--egg); border-color: var(--charcoal); }
+
+    .time-row { display: flex; align-items: center; gap: 10px; }
+    .time-row .sep { color: var(--muted); font-weight: 700; font-size: 16px; flex-shrink: 0; }
+    input[type="time"].time-input {
+      padding: 11px 14px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      color: var(--charcoal); background: var(--white); width: 110px;
+    }
+
+    /* ---- Dark mode ---- */
+    [data-theme="dark"] .asset-tabs { border-bottom-color: #443f37; }
+    [data-theme="dark"] .asset-tab.active { color: var(--egg); }
+    [data-theme="dark"] .asset-tab:hover:not(.active) { color: var(--egg); }
+    [data-theme="dark"] .sched-track  { background: #2e2a25; }
+    [data-theme="dark"] .sched-block.self-consume { background: #236e3f; }
+    [data-theme="dark"] .mode-badge.self-consume { background: rgba(61,186,106,.12); color: #3dba6a; }
+    [data-theme="dark"] .mode-badge.self-consume .dot { background: #3dba6a; }
+    [data-theme="dark"] .day-label { color: var(--muted); }
+    [data-theme="dark"] .sched-row.today .day-label { color: #f47445; }
+    [data-theme="dark"] .day-check label { background: #2d2a26; color: var(--muted); border-color: #443f37; }
+    [data-theme="dark"] .day-check input:checked + label { background: #e8e3d6; color: #0a0907; border-color: #e8e3d6; }
+    [data-theme="dark"] input[type="time"].time-input { background: #2d2a26; color: #e8e3d6; border-color: #443f37; }
+  </style>
+</head>
+
+<body data-page="schedule">
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio - Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="flex-simulator.html">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Help</div>
+        <a class="nav-item" data-nav="faq" href="flex-faq.html">FAQ</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">SITES / <strong>FOREST LODGE</strong> / SCHEDULE</div>
+        <div class="topbar-right">
+          <div class="site-selector"><span>Forest Lodge</span><span class="chev">&#9662;</span></div>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/><line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/></svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE CONTENT ============ -->
+      <main class="page">
+
+        <header class="page-head">
+          <div>
+            <h1>Flex:Schedule</h1>
+            <p class="page-sub">Give me simple control over how the system runs.</p>
+          </div>
+          <span class="module-tag">Operate</span>
+        </header>
+
+        <!-- Status tiles -->
+        <div class="coverage" style="grid-template-columns: repeat(4,1fr);">
+          <div class="stat actual">
+            <div class="lbl">Active Block</div>
+            <div id="statBlock" class="val" style="font-size:17px;line-height:1.2;margin-top:4px;">—</div>
+          </div>
+          <div class="stat">
+            <div class="lbl">Current Mode</div>
+            <div id="statMode">—</div>
+          </div>
+          <div class="stat estimated">
+            <div class="lbl">Battery SoC</div>
+            <div class="val" id="statSoc">—<span class="unit">%</span></div>
+            <div class="sub" id="statSocSub">—</div>
+          </div>
+          <div class="stat rows">
+            <div class="lbl">Next Action</div>
+            <div class="val" id="statNext" style="font-size:14px;margin-top:4px;">—</div>
+            <div class="sub" id="statNextTime">—</div>
+          </div>
+        </div>
+
+        <!-- Weekly schedule card -->
+        <div class="card">
+          <div class="card-head" style="gap:12px;">
+            <h2 id="schedCardTitle">Weekly Schedule &mdash; Battery</h2>
+            <button class="btn primary" id="addBlockBtn" style="padding:8px 16px;font-size:11px;white-space:nowrap;">+ Add Block</button>
+          </div>
+          <div class="card-body">
+
+            <!-- Asset tabs -->
+            <div class="asset-tabs">
+              <button class="asset-tab active" data-asset="battery" data-label="Battery">Battery</button>
+              <button class="asset-tab" data-asset="heatpump" data-label="Heat Pump">Heat Pump</button>
+              <button class="asset-tab" data-asset="ev" data-label="EV Charger">EV Charger</button>
+            </div>
+
+            <!-- Legend + tariff toggle -->
+            <div class="timeline-controls">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="tl-legend">
+                  <div class="tl-legend-item"><span class="tl-dot charge"></span>Charge</div>
+                  <div class="tl-legend-item"><span class="tl-dot discharge"></span>Discharge</div>
+                  <div class="tl-legend-item"><span class="tl-dot hold"></span>Hold</div>
+                  <div class="tl-legend-item"><span class="tl-dot self-consume"></span>Self-Consume</div>
+                </div>
+                <div style="position:relative;">
+                  <button class="mode-info-btn" id="modeInfoBtn" aria-label="Mode descriptions">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="8" cy="8" r="6.5"/>
+                      <line x1="8" y1="7.5" x2="8" y2="11.5"/>
+                      <circle cx="8" cy="5" r="0.6" fill="currentColor" stroke="none"/>
+                    </svg>
+                  </button>
+                  <div class="mode-info-popup" id="modeInfoPopup" hidden>
+                    <div class="mode-info-item"><span class="tl-dot charge"></span><div><strong>Charge</strong> — Draw from grid or solar to fill the battery</div></div>
+                    <div class="mode-info-item"><span class="tl-dot discharge"></span><div><strong>Discharge</strong> — Release stored energy to meet site demand</div></div>
+                    <div class="mode-info-item"><span class="tl-dot hold"></span><div><strong>Hold</strong> — Maintain current SoC; no active charge or discharge</div></div>
+                    <div class="mode-info-item"><span class="tl-dot self-consume"></span><div><strong>Self-Consume</strong> — Battery charges from surplus solar generation only; no grid import</div></div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Tariff overlay</span>
+                <button class="preset" id="tariffToggle">Off</button>
+              </div>
+            </div>
+
+            <!-- Timeline rendered by JS -->
+            <div class="timeline-wrap">
+              <div class="timeline-inner" id="timelineInner"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Add block panel (hidden until button clicked) -->
+        <div class="card hidden" id="addBlockPanel">
+          <div class="card-head">
+            <h2>Add Schedule Block</h2>
+            <span class="step">Battery</span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+
+              <div class="field span-2">
+                <label>Days</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                  <button class="preset active" id="presetWd">Weekdays</button>
+                  <button class="preset" id="presetWe">Weekend</button>
+                  <button class="preset" id="presetAll">All days</button>
+                </div>
+                <div class="day-checks">
+                  <div class="day-check"><input type="checkbox" id="dMon" checked><label for="dMon">Mon</label></div>
+                  <div class="day-check"><input type="checkbox" id="dTue" checked><label for="dTue">Tue</label></div>
+                  <div class="day-check"><input type="checkbox" id="dWed" checked><label for="dWed">Wed</label></div>
+                  <div class="day-check"><input type="checkbox" id="dThu" checked><label for="dThu">Thu</label></div>
+                  <div class="day-check"><input type="checkbox" id="dFri" checked><label for="dFri">Fri</label></div>
+                  <div class="day-check"><input type="checkbox" id="dSat"><label for="dSat">Sat</label></div>
+                  <div class="day-check"><input type="checkbox" id="dSun"><label for="dSun">Sun</label></div>
+                </div>
+              </div>
+
+              <div class="field span-2">
+                <label>Time Range</label>
+                <div class="time-row">
+                  <input type="time" class="time-input" id="blockStart" value="00:00">
+                  <span class="sep">&rarr;</span>
+                  <input type="time" class="time-input" id="blockEnd" value="06:00">
+                </div>
+                <div class="helper">Schedules run in <strong>NZ local time</strong> (Pacific/Auckland).</div>
+              </div>
+
+              <div class="field span-2">
+                <label>Mode</label>
+                <div class="radios" style="flex-wrap:wrap;">
+                  <div class="radio selected" data-mode="charge">
+                    <div class="dot-outer"></div>
+                    <div class="label-block"><div class="name">Charge</div><div class="desc">Draw from grid or solar to fill battery</div></div>
+                  </div>
+                  <div class="radio" data-mode="discharge">
+                    <div class="dot-outer"></div>
+                    <div class="label-block"><div class="name">Discharge</div><div class="desc">Release battery to meet site demand</div></div>
+                  </div>
+                  <div class="radio" data-mode="hold">
+                    <div class="dot-outer"></div>
+                    <div class="label-block"><div class="name">Hold</div><div class="desc">Maintain current SoC; no active charge or discharge</div></div>
+                  </div>
+                  <div class="radio" data-mode="self-consume">
+                    <div class="dot-outer"></div>
+                    <div class="label-block"><div class="name">Self-Consume</div><div class="desc">Charge battery from surplus solar only; no grid import</div></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+            <div class="actions">
+              <button class="btn" id="cancelBlock">Cancel</button>
+              <button class="btn primary" id="saveBlock">Add Block</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Change log -->
+        <div class="recent">
+          <div class="recent-head">Schedule Change Log</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th><th>User</th><th>Asset</th><th>Change</th><th>Previous</th><th>New value</th>
+              </tr>
+            </thead>
+            <tbody id="changeLog"></tbody>
+          </table>
+        </div>
+
+      </main>
+    </section>
+  </div>
+</div>
+
+<script src="assets/flex-platform.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  var WEEKDAY = [
+    { start: 0,  end: 6,  mode: 'charge'       },
+    { start: 6,  end: 8,  mode: 'hold'          },
+    { start: 8,  end: 17, mode: 'self-consume'  },
+    { start: 17, end: 21, mode: 'discharge'     },
+    { start: 21, end: 24, mode: 'hold'          }
+  ];
+  var WEEKEND = [
+    { start: 0,  end: 8,  mode: 'charge'       },
+    { start: 8,  end: 22, mode: 'self-consume' },
+    { start: 22, end: 24, mode: 'hold'         }
+  ];
+  var TARIFF = [
+    { start: 0,  end: 7,  type: 'offpeak' },
+    { start: 7,  end: 23, type: 'peak'    },
+    { start: 23, end: 24, type: 'offpeak' }
+  ];
+
+  var CHANGES = [
+    { ts: '2026-04-29 14:22', user: 'P. Urlich',         asset: 'Battery', change: 'Discharge block start time changed',        prev: '18:00',         next: '17:00' },
+    { ts: '2026-04-27 09:15', user: 'Blackcurrent Ops',  asset: 'Battery', change: 'Charge block end time changed',              prev: '07:00',         next: '06:00' },
+    { ts: '2026-04-22 11:03', user: 'P. Urlich',         asset: 'Battery', change: 'Self-Consume block extended (weekend)',      prev: '08:00 – 20:00', next: '08:00 – 22:00' },
+    { ts: '2026-04-15 16:40', user: 'Blackcurrent Ops',  asset: 'Battery', change: 'Self-Consume block added (weekdays)',        prev: '—',             next: '08:00 – 17:00 · Self-Consume' },
+    { ts: '2026-04-08 10:00', user: 'Blackcurrent Ops',  asset: 'Battery', change: 'Initial schedule configured',                prev: '—',             next: 'Full weekday schedule applied' }
+  ];
+
+  var showTariff = false;
+
+  function blocksForDay(idx) { return idx < 5 ? WEEKDAY : WEEKEND; }
+  function pct(h) { return (h / 24 * 100).toFixed(3) + '%'; }
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function getNZ() {
+    var now = new Date();
+    var dst = now.getUTCMonth() > 8 || now.getUTCMonth() < 3;
+    return new Date(now.getTime() + (dst ? 13 : 12) * 3600000);
+  }
+
+  function getActiveBlock() {
+    var nz = getNZ();
+    var dayIdx = (nz.getUTCDay() + 6) % 7;
+    var h = nz.getUTCHours() + nz.getUTCMinutes() / 60;
+    var blocks = blocksForDay(dayIdx);
+    for (var i = 0; i < blocks.length; i++) {
+      if (h >= blocks[i].start && h < blocks[i].end) return blocks[i];
+    }
+    return null;
+  }
+
+  function getNextBlock() {
+    var nz = getNZ();
+    var dayIdx = (nz.getUTCDay() + 6) % 7;
+    var h = nz.getUTCHours() + nz.getUTCMinutes() / 60;
+    var blocks = blocksForDay(dayIdx);
+    for (var i = 0; i < blocks.length; i++) {
+      if (blocks[i].start > h) return blocks[i];
+    }
+    return blocksForDay((dayIdx + 1) % 7)[0];
+  }
+
+  function socForMode(mode) {
+    return { charge: { val: 72, sub: '&#8593; charging' }, discharge: { val: 54, sub: '&#8595; discharging' }, hold: { val: 89, sub: '&rarr; holding' }, 'self-consume': { val: 68, sub: '&#9728; self-consuming' } }[mode] || { val: 68, sub: '~ self-consuming' };
+  }
+
+  var MODE_LABEL = { charge: 'Charge', discharge: 'Discharge', hold: 'Hold', 'self-consume': 'Self-Consume' };
+  function modeLabel(m) { return MODE_LABEL[m] || m; }
+
+  function updateStatus() {
+    var active = getActiveBlock();
+    var next   = getNextBlock();
+    if (active) {
+      document.getElementById('statBlock').textContent = pad2(active.start) + ':00 – ' + pad2(active.end) + ':00';
+      document.getElementById('statMode').innerHTML = '<div class="mode-badge ' + active.mode + '"><span class="dot"></span>' + modeLabel(active.mode) + '</div>';
+      var soc = socForMode(active.mode);
+      document.getElementById('statSoc').innerHTML = soc.val + '<span class="unit">%</span>';
+      document.getElementById('statSocSub').innerHTML = soc.sub;
+    }
+    if (next) {
+      document.getElementById('statNext').textContent = modeLabel(next.mode);
+      document.getElementById('statNextTime').textContent = 'from ' + pad2(next.start) + ':00';
+    }
+  }
+
+  function renderTimeline() {
+    var nz = getNZ();
+    var todayIdx = (nz.getUTCDay() + 6) % 7;
+    var nowH = nz.getUTCHours() + nz.getUTCMinutes() / 60;
+    var html = '';
+
+    // Hour labels
+    html += '<div class="hour-header"><div></div><div class="hour-track">';
+    [0,4,8,12,16,20,24].forEach(function(h) {
+      html += '<span class="hour-tick" style="left:' + pct(h) + '">' + pad2(h) + ':00</span>';
+    });
+    html += '</div></div>';
+
+    // Tariff band strip
+    if (showTariff) {
+      html += '<div class="tariff-header"><div></div><div class="tariff-band-row">';
+      TARIFF.forEach(function(t) {
+        html += '<div class="tariff-band ' + t.type + '" style="left:' + pct(t.start) + ';width:' + ((t.end - t.start) / 24 * 100).toFixed(3) + '%;"></div>';
+      });
+      html += '</div></div>';
+    }
+
+    DAYS.forEach(function(day, idx) {
+      var isToday = idx === todayIdx;
+      var blocks = blocksForDay(idx);
+      html += '<div class="sched-row' + (isToday ? ' today' : '') + '">';
+      html += '<div class="day-label">' + day + '</div>';
+      html += '<div class="sched-track">';
+
+      if (showTariff) {
+        TARIFF.forEach(function(t) {
+          html += '<div class="tariff-overlay ' + t.type + '" style="left:' + pct(t.start) + ';width:' + ((t.end - t.start) / 24 * 100).toFixed(3) + '%;"></div>';
+        });
+      }
+
+      blocks.forEach(function(b) {
+        var w = (b.end - b.start) / 24 * 100;
+        var narrow = w < 9;
+        html += '<div class="sched-block ' + b.mode + '"'
+          + ' style="left:' + pct(b.start) + ';width:' + w.toFixed(3) + '%;"'
+          + ' title="' + modeLabel(b.mode) + ': ' + pad2(b.start) + ':00 – ' + pad2(b.end) + ':00"'
+          + ' onclick="openBlockDetail(' + JSON.stringify(b) + ')">'
+          + (narrow ? '' : modeLabel(b.mode))
+          + '</div>';
+      });
+
+      if (isToday) {
+        html += '<div class="now-line" style="left:' + pct(nowH) + ';"></div>';
+      }
+      html += '</div></div>';
+    });
+
+    document.getElementById('timelineInner').innerHTML = html;
+  }
+
+  var MODE_DESC = {
+    charge:          'Draw from grid or solar to fill the battery.',
+    discharge:       'Release stored energy to meet site demand.',
+    hold:            'Maintain current SoC — no active charge or discharge.',
+    'self-consume':  'Battery charges from surplus solar generation only. No grid import.'
+  };
+
+  window.openBlockDetail = function(b) {
+    FlexModal.open({
+      eyebrow: 'Battery — Schedule Block',
+      title: modeLabel(b.mode),
+      html: '<p style="font-size:13px;color:var(--muted);margin:0 0 16px;">' + (MODE_DESC[b.mode] || '') + '</p>'
+        + '<div class="meta" style="margin-bottom:16px;">'
+        + '<div class="row"><span class="key">Start</span><span class="val">' + pad2(b.start) + ':00</span></div>'
+        + '<div class="row"><span class="key">End</span><span class="val">' + pad2(b.end) + ':00</span></div>'
+        + '<div class="row"><span class="key">Duration</span><span class="val">' + (b.end - b.start) + ' hours</span></div>'
+        + '</div>'
+        + '<p style="font-size:13px;color:var(--muted);margin:0 0 20px;">Full block editing is available to Blackcurrent operators. Use the <strong>Add Block</strong> button to create a new block, or contact Blackcurrent Ops to modify this one.</p>'
+        + '<div class="actions" style="margin-top:0;">'
+        + '<button class="btn" onclick="FlexModal.close()">Close</button>'
+        + '<button class="btn primary" onclick="FlexModal.close()">Request Change</button>'
+        + '</div>'
+    });
+  };
+
+  function renderChangeLog() {
+    var html = '';
+    CHANGES.forEach(function(c) {
+      html += '<tr>'
+        + '<td>' + c.ts + '</td>'
+        + '<td>' + c.user + '</td>'
+        + '<td>' + c.asset + '</td>'
+        + '<td>' + c.change + '</td>'
+        + '<td style="color:var(--muted);">' + c.prev + '</td>'
+        + '<td style="font-weight:700;">' + c.next + '</td>'
+        + '</tr>';
+    });
+    document.getElementById('changeLog').innerHTML = html;
+  }
+
+  // ---- Asset tabs ----
+  document.querySelectorAll('.asset-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.asset-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById('schedCardTitle').innerHTML = 'Weekly Schedule &mdash; ' + tab.dataset.label;
+    });
+  });
+
+  // ---- Tariff toggle ----
+  document.getElementById('tariffToggle').addEventListener('click', function() {
+    showTariff = !showTariff;
+    this.textContent = showTariff ? 'On' : 'Off';
+    this.classList.toggle('active', showTariff);
+    renderTimeline();
+  });
+
+  // ---- Add block panel ----
+  var panel = document.getElementById('addBlockPanel');
+  document.getElementById('addBlockBtn').addEventListener('click', function() {
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  document.getElementById('cancelBlock').addEventListener('click', function() {
+    panel.classList.add('hidden');
+  });
+
+  // Day presets
+  var dayIds = ['dMon','dTue','dWed','dThu','dFri','dSat','dSun'];
+  function setDayPattern(pattern) {
+    dayIds.forEach(function(id, i) { document.getElementById(id).checked = !!pattern[i]; });
+    document.getElementById('presetWd').classList.toggle('active', pattern.join() === '1,1,1,1,1,0,0');
+    document.getElementById('presetWe').classList.toggle('active', pattern.join() === '0,0,0,0,0,1,1');
+    document.getElementById('presetAll').classList.toggle('active', pattern.join() === '1,1,1,1,1,1,1');
+  }
+  document.getElementById('presetWd').addEventListener('click', function() { setDayPattern([1,1,1,1,1,0,0]); });
+  document.getElementById('presetWe').addEventListener('click', function() { setDayPattern([0,0,0,0,0,1,1]); });
+  document.getElementById('presetAll').addEventListener('click', function() { setDayPattern([1,1,1,1,1,1,1]); });
+
+  // Mode radios
+  document.querySelectorAll('.radio[data-mode]').forEach(function(r) {
+    r.addEventListener('click', function() {
+      document.querySelectorAll('.radio[data-mode]').forEach(function(x) { x.classList.remove('selected'); });
+      r.classList.add('selected');
+    });
+  });
+
+  // Save block (prototype: logs to change table)
+  document.getElementById('saveBlock').addEventListener('click', function() {
+    var start = document.getElementById('blockStart').value;
+    var end   = document.getElementById('blockEnd').value;
+    var mode  = (document.querySelector('.radio[data-mode].selected') || {dataset:{mode:'self-consume'}}).dataset.mode;
+    var days  = dayIds.filter(function(id) { return document.getElementById(id).checked; })
+                      .map(function(id) { return id.slice(1); }).join(', ');
+    var nz = getNZ();
+    var ts = nz.getUTCFullYear() + '-' + pad2(nz.getUTCMonth()+1) + '-' + pad2(nz.getUTCDate())
+           + ' ' + pad2(nz.getUTCHours()) + ':' + pad2(nz.getUTCMinutes());
+    CHANGES.unshift({ ts: ts, user: 'P. Urlich', asset: 'Battery', change: 'Block added (' + days + ')', prev: '—', next: start + ' – ' + end + ' · ' + mode });
+    renderChangeLog();
+    panel.classList.add('hidden');
+    var btn = document.getElementById('addBlockBtn');
+    var orig = btn.textContent;
+    btn.textContent = '✓ Block Added';
+    setTimeout(function() { btn.textContent = orig; }, 2200);
+  });
+
+  // Mode info popup
+  var modeInfoBtn   = document.getElementById('modeInfoBtn');
+  var modeInfoPopup = document.getElementById('modeInfoPopup');
+  modeInfoBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    modeInfoPopup.hidden = !modeInfoPopup.hidden;
+  });
+  document.addEventListener('click', function() { modeInfoPopup.hidden = true; });
+
+  // Init
+  updateStatus();
+  renderTimeline();
+  renderChangeLog();
+})();
+</script>
+</body>
+</html>

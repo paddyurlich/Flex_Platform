@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flex:DataExport &mdash; Blackcurrent</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+</head>
+<body data-page="data-export">
+
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio - Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="flex-simulator.html">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Help</div>
+        <a class="nav-item" data-nav="faq" href="flex-faq.html">FAQ</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">SITES / <strong>FOREST LODGE</strong> / DATA EXPORT</div>
+        <div class="topbar-right">
+          <div class="site-selector">
+            <span>Forest Lodge</span>
+            <span class="chev">&#9662;</span>
+          </div>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/>
+              <line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/>
+              <line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/>
+              <line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/>
+            </svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <main class="page">
+
+        <header class="page-head">
+          <div>
+            <h1>Flex:DataExport</h1>
+            <p class="page-sub">Half-hourly energy data &mdash; Import, Export, Consumption, Generation. Site-level. Local time.</p>
+          </div>
+          <span class="module-tag">Data</span>
+        </header>
+
+        <!-- ============== Configure ============== -->
+        <div class="card">
+          <div class="card-head">
+            <h2>Configure Export</h2>
+            <span class="step">Step 1 of 2</span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="field">
+                <label for="device">Device</label>
+                <select class="select" id="device">
+                  <option value="Main Energy">Main Energy &mdash; site mains</option>
+                  <option value="Submeter A — Irrigation pump">Submeter A &mdash; Irrigation pump</option>
+                  <option value="Submeter B — Cool store">Submeter B &mdash; Cool store</option>
+                  <option value="Submeter C — Workshop">Submeter C &mdash; Workshop</option>
+                </select>
+                <div class="helper">Single device per export. Multi-device coming later.</div>
+              </div>
+
+              <div class="field">
+                <label>Resolution</label>
+                <select class="select" disabled style="opacity:.7">
+                  <option>30 minutes &mdash; interval ending</option>
+                </select>
+                <div class="helper">Fixed in v1. Matches NZ EIEP convention.</div>
+              </div>
+
+              <div class="field span-2">
+                <label>Date range</label>
+                <div class="daterange">
+                  <div class="seg">
+                    <span class="micro">From</span>
+                    <input type="date" id="fromDate">
+                  </div>
+                  <div class="arrow">&rarr;</div>
+                  <div class="seg">
+                    <span class="micro">To</span>
+                    <input type="date" id="toDate">
+                  </div>
+                </div>
+                <div class="presets" id="presets">
+                  <span class="preset" data-preset="30d">Last 30 days</span>
+                  <span class="preset" data-preset="12m">Last 12 months</span>
+                  <span class="preset" data-preset="ytd">YTD</span>
+                  <span class="preset active" data-preset="all">From service commencement</span>
+                </div>
+                <div class="helper"><strong>Service commencement:</strong> <span id="commencementLabel">01 Jun 2023</span>. Earliest selectable date.</div>
+              </div>
+
+              <div class="field span-2">
+                <label>Format</label>
+                <div class="radios" id="formatRadios">
+                  <div class="radio selected" data-format="csv">
+                    <div class="dot-outer"></div>
+                    <div class="label-block">
+                      <div class="name">CSV</div>
+                      <div class="desc">Comma-delimited, dot decimal. Best for Excel and downstream tools.</div>
+                    </div>
+                  </div>
+                  <div class="radio" data-format="xlsx">
+                    <div class="dot-outer"></div>
+                    <div class="label-block">
+                      <div class="name">XLSX</div>
+                      <div class="desc">Excel workbook with metadata sheet.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn primary" id="previewBtn">Preview <span class="arrow">&rarr;</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============== Preview ============== -->
+        <div class="card" id="previewCard">
+          <div class="card-head">
+            <h2>Preview</h2>
+            <span class="step">Step 2 of 2</span>
+          </div>
+          <div class="card-body" id="previewBody">
+            <div class="preview-empty" id="previewEmpty">
+              <div class="big">Click Preview to generate</div>
+              <div>Confirm device, range and format above, then preview the file before downloading.</div>
+            </div>
+            <div id="previewContent" class="hidden">
+              <div class="stale-banner" id="staleBanner">Selections changed &mdash; click Preview to refresh.</div>
+
+              <div class="meta" id="meta"></div>
+
+              <div class="table-wrap">
+                <table class="preview">
+                  <thead>
+                    <tr>
+                      <th>Interval Ending</th>
+                      <th>Offset</th>
+                      <th class="num">Import (kWh)</th>
+                      <th class="num">Export (kWh)</th>
+                      <th class="num">Consumption (kWh)</th>
+                      <th class="num">Generation (kWh)</th>
+                      <th>Data Quality</th>
+                      <th>Device</th>
+                    </tr>
+                  </thead>
+                  <tbody id="previewTbody"></tbody>
+                </table>
+              </div>
+
+              <div class="actions">
+                <button class="btn primary" id="downloadBtn">Download <span id="downloadFormat">CSV</span> <span class="arrow">&darr;</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============== Recent ============== -->
+        <div class="recent">
+          <div class="recent-head">Recent Exports</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Generated</th>
+                <th>Device</th>
+                <th>Range</th>
+                <th>Format</th>
+                <th>Rows</th>
+                <th>By</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="recentTbody">
+              <tr>
+                <td>02 Apr 2026 &middot; 16:42</td>
+                <td>Submeter A &mdash; Irrigation pump</td>
+                <td>01 Jan 2026 &rarr; 31 Mar 2026</td>
+                <td>XLSX</td>
+                <td>4,368</td>
+                <td>Paddy Urlich</td>
+                <td><a>Download &darr;</a></td>
+              </tr>
+              <tr>
+                <td>14 Mar 2026 &middot; 11:08</td>
+                <td>Main Energy</td>
+                <td>01 Mar 2025 &rarr; 28 Feb 2026</td>
+                <td>CSV</td>
+                <td>17,520</td>
+                <td>Matt Strik</td>
+                <td><a>Download &darr;</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </main>
+    </section>
+  </div>
+</div>
+
+<script src="assets/flex-platform.js"></script>
+<script>
+// =====================================================
+// Flex:DataExport — page-specific behaviour
+// Uses FlexUtil from flex-platform.js for shared formatters.
+// =====================================================
+(function () {
+  'use strict';
+
+  var U = window.FlexUtil;
+
+  // ---------- constants ----------
+  var SITE_NAME = "Forest Lodge";
+  var SITE_ICP = "0001234567ABC9";
+  var USER_NAME = "Paddy Urlich";
+  var USER_EMAIL = "paddy@blackcurrent.io";
+  var COMMENCEMENT = new Date(2023, 5, 1); // 01 Jun 2023
+  var HALF_HOUR_MS = 30 * 60 * 1000;
+  var HEAD_ROWS = 5;
+  var TAIL_ROWS = 5;
+
+  // ---------- state ----------
+  var state = {
+    device: "Main Energy",
+    fromDate: new Date(2023, 5, 1),
+    toDate: new Date(2026, 3, 28, 23, 30, 0),
+    format: "csv",
+    preset: "all",
+    preview: null,
+    previewStale: false,
+  };
+
+  function dmyMonths(d) {
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return U.pad(d.getDate()) + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+  }
+  function fmtKwh(x) { return x === '' ? '' : Number(x).toFixed(3); }
+
+  function genInterval(date, device) {
+    var isSubmeter = device !== 'Main Energy';
+    var rand = U.seedRng(date.getTime());
+    var hour = date.getHours() + date.getMinutes() / 60;
+    var dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000);
+    var seasonal = 0.35 + 0.65 * (Math.cos(2 * Math.PI * (dayOfYear - 355) / 365) + 1) / 2;
+
+    var genKwh = 0;
+    if (hour >= 6 && hour <= 19) {
+      var x = (hour - 12.5) / 4;
+      genKwh = 4.8 * Math.exp(-x * x) * seasonal * (0.85 + rand() * 0.3);
+    }
+
+    var consKwh = 1.1 + rand() * 0.4;
+    if (hour >= 7 && hour <= 9) consKwh += 0.9 * Math.exp(-Math.pow((hour - 8) / 1, 2));
+    if (hour >= 17 && hour <= 21) consKwh += 1.6 * Math.exp(-Math.pow((hour - 19) / 1.5, 2));
+
+    var r = rand();
+    var quality = 'Actual';
+    if (r > 0.998) quality = 'Missing';
+    else if (r > 0.985) quality = 'Estimated';
+
+    if (isSubmeter) {
+      var factor = 0.3;
+      if (device.indexOf('Irrigation') !== -1) {
+        factor = (hour >= 4 && hour <= 7) ? 4.5 + rand() * 1.5 : 0.04 + rand() * 0.05;
+      } else if (device.indexOf('Cool store') !== -1) {
+        factor = 0.55 + rand() * 0.25;
+      } else if (device.indexOf('Workshop') !== -1) {
+        factor = (hour >= 8 && hour <= 17) ? 0.6 + rand() * 0.4 : 0.05 + rand() * 0.05;
+      }
+      var value = consKwh * factor;
+      return {
+        timestamp: U.ymdhm(date),
+        offset: U.nzOffset(date),
+        importE: '', exportE: '',
+        consumption: U.round3(value),
+        generation: '',
+        quality: quality, device: device,
+        missing: quality === 'Missing'
+      };
+    }
+
+    var net = consKwh - genKwh;
+    return {
+      timestamp: U.ymdhm(date),
+      offset: U.nzOffset(date),
+      importE: U.round3(Math.max(net, 0)),
+      exportE: U.round3(Math.max(-net, 0)),
+      consumption: U.round3(consKwh),
+      generation: U.round3(genKwh),
+      quality: quality, device: device,
+      missing: quality === 'Missing'
+    };
+  }
+
+  function intervalCount(from, to) {
+    return Math.max(0, Math.floor((to.getTime() - from.getTime()) / HALF_HOUR_MS) + 1);
+  }
+
+  function generatePreviewData() {
+    var startMs = state.fromDate.getTime();
+    var total = intervalCount(state.fromDate, state.toDate);
+
+    var headRows = [];
+    for (var i = 0; i < Math.min(HEAD_ROWS, total); i++) {
+      var t = new Date(startMs + (i + 1) * HALF_HOUR_MS);
+      headRows.push(genInterval(t, state.device));
+    }
+
+    var tailRows = [];
+    if (total > HEAD_ROWS + TAIL_ROWS) {
+      for (var j = total - TAIL_ROWS; j < total; j++) {
+        var t2 = new Date(startMs + (j + 1) * HALF_HOUR_MS);
+        tailRows.push(genInterval(t2, state.device));
+      }
+    }
+
+    return {
+      totalRows: total,
+      headRows: headRows,
+      tailRows: tailRows
+    };
+  }
+
+  // ---------- UI helpers ----------
+  function setPreset(preset) {
+    state.preset = preset;
+    document.querySelectorAll('.preset').forEach(function (p) {
+      p.classList.toggle('active', p.dataset.preset === preset);
+    });
+    var from, to;
+    if (preset === '30d') {
+      to = new Date(2026, 3, 28, 23, 30);
+      from = new Date(to); from.setDate(from.getDate() - 30); from.setHours(0,0,0,0);
+    } else if (preset === '12m') {
+      to = new Date(2026, 3, 28, 23, 30);
+      from = new Date(to); from.setFullYear(from.getFullYear() - 1); from.setHours(0,0,0,0);
+    } else if (preset === 'ytd') {
+      from = new Date(2026, 0, 1);
+      to = new Date(2026, 3, 28, 23, 30);
+    } else {
+      from = new Date(COMMENCEMENT);
+      to = new Date(2026, 3, 28, 23, 30);
+    }
+    state.fromDate = from;
+    state.toDate = to;
+    document.getElementById('fromDate').value = U.ymd(from);
+    document.getElementById('toDate').value = U.ymd(to);
+    markStale();
+  }
+
+  function markStale() {
+    if (state.preview) {
+      state.previewStale = true;
+      document.getElementById('staleBanner').classList.add('show');
+    }
+  }
+
+  function renderPreview() {
+    var p = generatePreviewData();
+    state.preview = p;
+    state.previewStale = false;
+    document.getElementById('staleBanner').classList.remove('show');
+
+    var generatedNow = new Date(2026, 3, 29, 9, 14, 22);
+    var meta = document.getElementById('meta');
+    meta.innerHTML =
+        '<div class="row"><span class="key">site</span><span class="val">' + SITE_NAME + ' <span class="accent">// ICP ' + SITE_ICP + '</span></span></div>'
+      + '<div class="row"><span class="key">device</span><span class="val">' + U.escapeHtml(state.device) + '</span></div>'
+      + '<div class="row"><span class="key">range</span><span class="val">' + U.ymdhm(state.fromDate) + ' → ' + U.ymdhm(state.toDate) + ' (local, NZ)</span></div>'
+      + '<div class="row"><span class="key">resolution</span><span class="val">30 minutes, interval ending</span></div>'
+      + '<div class="row"><span class="key">timezone</span><span class="val">Pacific/Auckland (offset shown per row)</span></div>'
+      + '<div class="row"><span class="key">units</span><span class="val">kWh</span></div>'
+      + '<div class="row"><span class="key">format</span><span class="val">' + state.format.toUpperCase() + '</span></div>'
+      + '<div class="row"><span class="key">generated</span><span class="val">' + U.ymdhm(generatedNow) + ' ' + U.nzOffset(generatedNow) + ' by ' + USER_EMAIL + '</span></div>';
+
+    var tbody = document.getElementById('previewTbody');
+    function renderRow(r) {
+      return '<tr>'
+        + '<td>' + r.timestamp + '</td>'
+        + '<td>' + r.offset + '</td>'
+        + '<td class="num">' + (r.importE === '' ? '<span class="empty">—</span>' : fmtKwh(r.importE)) + '</td>'
+        + '<td class="num">' + (r.exportE === '' ? '<span class="empty">—</span>' : fmtKwh(r.exportE)) + '</td>'
+        + '<td class="num">' + fmtKwh(r.consumption) + '</td>'
+        + '<td class="num">' + (r.generation === '' ? '<span class="empty">—</span>' : fmtKwh(r.generation)) + '</td>'
+        + '<td><span class="flag ' + r.quality.toLowerCase() + '">' + r.quality + '</span></td>'
+        + '<td>' + U.escapeHtml(r.device) + '</td>'
+        + '</tr>';
+    }
+    var html = p.headRows.map(renderRow).join('');
+    if (p.tailRows.length > 0) {
+      var hidden = p.totalRows - p.headRows.length - p.tailRows.length;
+      html += '<tr class="gap"><td colspan="8">— first ' + p.headRows.length + ' rows · ' + U.fmtNum(hidden) + ' rows hidden · last ' + p.tailRows.length + ' rows —</td></tr>';
+      html += p.tailRows.map(renderRow).join('');
+    }
+    tbody.innerHTML = html;
+
+    document.getElementById('downloadFormat').textContent = state.format.toUpperCase();
+    document.getElementById('previewEmpty').classList.add('hidden');
+    document.getElementById('previewContent').classList.remove('hidden');
+  }
+
+  // ---------- export ----------
+  function buildCSV() {
+    var lines = [];
+    lines.push('# Site,' + SITE_NAME);
+    lines.push('# ICP,' + SITE_ICP);
+    lines.push('# Device,' + state.device);
+    lines.push('# Range,' + U.ymdhm(state.fromDate) + ' → ' + U.ymdhm(state.toDate) + ' (local NZ)');
+    lines.push('# Resolution,30 minutes — interval ending');
+    lines.push('# Units,kWh');
+    lines.push('# Generated,' + U.ymdhm(new Date()) + ' by ' + USER_EMAIL);
+    lines.push('');
+    lines.push('Interval Ending,Offset,Import (kWh),Export (kWh),Consumption (kWh),Generation (kWh),Data Quality,Device');
+
+    var startMs = state.fromDate.getTime();
+    var total = intervalCount(state.fromDate, state.toDate);
+    for (var i = 0; i < total; i++) {
+      var t = new Date(startMs + (i + 1) * HALF_HOUR_MS);
+      var r = genInterval(t, state.device);
+      lines.push([
+        r.timestamp, r.offset,
+        r.importE === '' ? '' : r.importE,
+        r.exportE === '' ? '' : r.exportE,
+        r.consumption,
+        r.generation === '' ? '' : r.generation,
+        r.quality,
+        '"' + r.device + '"'
+      ].join(','));
+    }
+    return lines.join('\n');
+  }
+
+  function downloadBlob(content, filename, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function makeFilename() {
+    var safeSite = SITE_NAME.toLowerCase().replace(/\s+/g, '-');
+    var safeDevice = state.device.toLowerCase().replace(/\s+/g, '-').replace(/[—–]/g, '-').replace(/-+/g, '-');
+    return 'flex-data-export_' + safeSite + '_' + safeDevice + '_' + U.ymd(state.fromDate) + '_to_' + U.ymd(state.toDate) + '.' + state.format;
+  }
+
+  function exportFile() {
+    var btn = document.getElementById('downloadBtn');
+    btn.disabled = true;
+    btn.innerHTML = 'Generating…';
+
+    setTimeout(function () {
+      // Both formats produce CSV in the prototype. Real XLSX would use SheetJS.
+      var content = buildCSV();
+      var mime = state.format === 'csv' ? 'text/csv;charset=utf-8' : 'application/vnd.ms-excel';
+      var filename = makeFilename();
+      downloadBlob(content, filename, mime);
+      addRecentExport({
+        generated: new Date(),
+        device: state.device,
+        from: state.fromDate, to: state.toDate,
+        format: state.format.toUpperCase(),
+        rows: state.preview ? state.preview.totalRows : intervalCount(state.fromDate, state.toDate),
+        by: USER_NAME
+      });
+      btn.disabled = false;
+      btn.innerHTML = 'Download <span id="downloadFormat">' + state.format.toUpperCase() + '</span> <span class="arrow">↓</span>';
+    }, 150);
+  }
+
+  function addRecentExport(rec) {
+    var tbody = document.getElementById('recentTbody');
+    var tr = document.createElement('tr');
+    tr.className = 'new-row';
+    var generatedTxt = dmyMonths(rec.generated) + ' · ' + U.pad(rec.generated.getHours()) + ':' + U.pad(rec.generated.getMinutes());
+    tr.innerHTML =
+        '<td>' + generatedTxt + '</td>'
+      + '<td>' + U.escapeHtml(rec.device) + '</td>'
+      + '<td>' + dmyMonths(rec.from) + ' → ' + dmyMonths(rec.to) + '</td>'
+      + '<td>' + rec.format + '</td>'
+      + '<td>' + U.fmtNum(rec.rows) + '</td>'
+      + '<td>' + rec.by + '</td>'
+      + '<td><a>Download ↓</a></td>';
+    tbody.insertBefore(tr, tbody.firstChild);
+  }
+
+  // ---------- init ----------
+  function init() {
+    document.getElementById('commencementLabel').textContent = dmyMonths(COMMENCEMENT);
+
+    var fromIn = document.getElementById('fromDate');
+    var toIn = document.getElementById('toDate');
+    fromIn.min = U.ymd(COMMENCEMENT);
+    fromIn.max = U.ymd(state.toDate);
+    toIn.min = U.ymd(COMMENCEMENT);
+    toIn.max = '2026-04-29';
+    fromIn.value = U.ymd(state.fromDate);
+    toIn.value = U.ymd(state.toDate);
+
+    fromIn.addEventListener('change', function () {
+      state.fromDate = new Date(fromIn.value + 'T00:00:00');
+      state.preset = 'custom';
+      document.querySelectorAll('.preset').forEach(function (p) { p.classList.remove('active'); });
+      markStale();
+    });
+    toIn.addEventListener('change', function () {
+      state.toDate = new Date(toIn.value + 'T23:30:00');
+      state.preset = 'custom';
+      document.querySelectorAll('.preset').forEach(function (p) { p.classList.remove('active'); });
+      markStale();
+    });
+
+    document.getElementById('device').addEventListener('change', function (e) {
+      state.device = e.target.value;
+      markStale();
+    });
+
+    document.querySelectorAll('.preset').forEach(function (p) {
+      p.addEventListener('click', function () { setPreset(p.dataset.preset); });
+    });
+
+    document.querySelectorAll('#formatRadios .radio').forEach(function (r) {
+      r.addEventListener('click', function () {
+        document.querySelectorAll('#formatRadios .radio').forEach(function (x) { x.classList.remove('selected'); });
+        r.classList.add('selected');
+        state.format = r.dataset.format;
+        var df = document.getElementById('downloadFormat');
+        if (df) df.textContent = state.format.toUpperCase();
+        markStale();
+      });
+    });
+
+    document.getElementById('previewBtn').addEventListener('click', function () {
+      renderPreview();
+      document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', exportFile);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>

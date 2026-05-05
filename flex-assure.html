@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flex:Assure &mdash; Blackcurrent</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+
+  <style>
+    /* ---- Toolbar ---- */
+    .as-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .as-site-select {
+      padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--charcoal);
+      background: var(--white); cursor: pointer; min-width: 240px;
+    }
+    .period-tabs { display: flex; gap: 4px; }
+    .period-tab {
+      padding: 7px 14px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-family: inherit; font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; cursor: pointer; background: var(--white);
+      color: var(--muted); transition: background 0.1s, color 0.1s, border-color 0.1s;
+    }
+    .period-tab.active, .period-tab:hover {
+      background: var(--charcoal); color: var(--egg); border-color: var(--charcoal);
+    }
+
+    /* ---- System info strip ---- */
+    .system-info {
+      display: flex; gap: 24px; align-items: center;
+      padding: 12px 18px; background: var(--white);
+      border: 1px solid var(--line); border-radius: 3px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .system-info-item { display: flex; flex-direction: column; }
+    .system-info-label { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+    .system-info-val   { font-size: 13px; font-weight: 700; color: var(--charcoal); }
+
+    /* ---- Fit indicator row ---- */
+    .fit-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px; margin-bottom: 20px;
+    }
+    .fit-card {
+      border: 1px solid var(--line); border-radius: 4px;
+      background: var(--white); padding: 16px 18px;
+    }
+    .fit-card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .fit-card-label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+    .fit-status {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 2px;
+    }
+    .fit-status.on-track  { background: rgba(42,138,78,.10); color: #2a8a4e; border: 1px solid rgba(42,138,78,.22); }
+    .fit-status.below     { background: rgba(236,95,48,.10); color: var(--rust); border: 1px solid rgba(236,95,48,.22); }
+    .fit-status.above     { background: rgba(85,151,209,.10); color: var(--sapphire); border: 1px solid rgba(85,151,209,.22); }
+    .fit-actual   { font-size: 26px; font-weight: 800; color: var(--charcoal); letter-spacing: -0.02em; line-height: 1; }
+    .fit-actual .unit { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .fit-vs       { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 4px; }
+    .fit-vs strong { color: var(--charcoal); font-weight: 700; }
+    .fit-bar-wrap { margin-top: 10px; height: 5px; background: var(--line); border-radius: 99px; overflow: hidden; }
+    .fit-bar-fill { height: 100%; border-radius: 99px; }
+    .fit-bar-fill.good  { background: #2a8a4e; }
+    .fit-bar-fill.warn  { background: var(--rust); }
+    .fit-bar-fill.great { background: var(--sapphire); }
+
+    /* ---- Section card (charts, tables) ---- */
+    .as-section { margin-bottom: 16px; }
+    .as-section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px 12px; border-bottom: 1px solid var(--line);
+    }
+    .as-section-title { font-size: 13px; font-weight: 800; letter-spacing: -0.01em; color: var(--charcoal); }
+    .as-section-body  { padding: 20px; }
+    .as-section-body.no-pad { padding: 0; }
+
+    /* ---- PR gauge strip ---- */
+    .pr-strip {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .pr-number {
+      font-size: 48px; font-weight: 900; letter-spacing: -0.04em; line-height: 1;
+    }
+    .pr-number.good { color: #2a8a4e; }
+    .pr-number.warn { color: #9a7200; }
+    .pr-number.bad  { color: var(--rust); }
+    .pr-number .pct { font-size: 22px; }
+    .pr-meta { flex: 1; }
+    .pr-meta-label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .pr-benchmark {
+      font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 6px; line-height: 1.5;
+    }
+    .pr-benchmark strong { color: var(--charcoal); font-weight: 700; }
+
+    /* ---- Weather context ---- */
+    .weather-card {
+      background: var(--bg); border: 1px solid var(--line); border-radius: 3px;
+      padding: 16px 18px; margin-bottom: 0;
+    }
+    .weather-label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .weather-statement { font-size: 14px; font-weight: 600; color: var(--charcoal); line-height: 1.6; }
+    .weather-factors { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .weather-factor {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 2px; border: 1px solid var(--line-strong);
+      color: var(--muted);
+    }
+    .weather-factor.primary { border-color: var(--sapphire); color: var(--sapphire); background: rgba(85,151,209,.07); }
+
+    /* ---- Health flags ---- */
+    .flag-list { display: flex; flex-direction: column; gap: 0; }
+    .flag-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 12px 20px; border-bottom: 1px solid var(--line);
+    }
+    .flag-item:last-child { border-bottom: none; }
+    .flag-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+    }
+    .flag-dot.red    { background: var(--rust); }
+    .flag-dot.amber  { background: #e8a730; }
+    .flag-dot.green  { background: #2a8a4e; }
+    .flag-body { flex: 1; min-width: 0; }
+    .flag-title { font-size: 12px; font-weight: 700; color: var(--charcoal); margin-bottom: 2px; }
+    .flag-desc  { font-size: 11px; color: var(--muted); font-weight: 500; line-height: 1.5; }
+    .flag-date  { font-size: 10px; color: var(--muted); font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+
+    /* ---- Payback tile ---- */
+    .payback-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .payback-item { padding: 14px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 3px; }
+    .payback-item-label { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .payback-item-val   { font-size: 22px; font-weight: 800; color: var(--charcoal); letter-spacing: -0.02em; }
+    .payback-item-sub   { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 3px; }
+    .payback-item-val.positive { color: #2a8a4e; }
+
+    /* ---- Chart ---- */
+    .chart-wrap { position: relative; }
+    .chart-wrap canvas { max-width: 100%; }
+
+    /* ---- Dark mode ---- */
+    [data-theme="dark"] .as-site-select { background: #1c1a17; color: #e8e3d6; border-color: #443f37; }
+    [data-theme="dark"] .system-info { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .system-info-val { color: #e8e3d6; }
+    [data-theme="dark"] .fit-card { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .fit-actual { color: #e8e3d6; }
+    [data-theme="dark"] .fit-bar-wrap { background: #2e2a25; }
+    [data-theme="dark"] .as-section-head { border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .as-section-title { color: #e8e3d6; }
+    [data-theme="dark"] .pr-meta-label { color: #6a6560; }
+    [data-theme="dark"] .pr-benchmark { color: #6a6560; }
+    [data-theme="dark"] .pr-benchmark strong { color: #c8c3b8; }
+    [data-theme="dark"] .weather-card { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .weather-statement { color: #c8c3b8; }
+    [data-theme="dark"] .weather-factor { border-color: #443f37; }
+    [data-theme="dark"] .flag-item { border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .flag-title { color: #c8c3b8; }
+    [data-theme="dark"] .payback-item { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .payback-item-val { color: #e8e3d6; }
+
+    /* ---- Mobile ---- */
+    @media (max-width: 780px) {
+      .fit-row { grid-template-columns: 1fr; }
+      .payback-grid { grid-template-columns: 1fr; }
+      .as-toolbar { flex-direction: column; align-items: flex-start; }
+      .pr-strip { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+
+<body data-page="assure">
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio - Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="flex-simulator.html">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Help</div>
+        <a class="nav-item" data-nav="faq" href="flex-faq.html">FAQ</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">SITES / <strong id="breadcrumbSite">—</strong> / ASSURE</div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/><line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/></svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE CONTENT ============ -->
+      <main class="page">
+
+        <header class="page-head">
+          <div>
+            <h1>Flex:Assure</h1>
+            <p class="page-sub">Is your solar system delivering what you were sold?</p>
+          </div>
+          <span class="module-tag">Optimise</span>
+        </header>
+
+        <!-- toolbar -->
+        <div class="as-toolbar">
+          <select class="as-site-select" id="siteSelect"></select>
+          <div class="period-tabs">
+            <button class="period-tab" onclick="setPeriod(this,'3m')">3 months</button>
+            <button class="period-tab" onclick="setPeriod(this,'6m')">6 months</button>
+            <button class="period-tab active" onclick="setPeriod(this,'12m')">12 months</button>
+            <button class="period-tab" onclick="setPeriod(this,'all')">Since install</button>
+          </div>
+        </div>
+
+        <!-- system info strip -->
+        <div class="system-info" id="systemInfo">
+          <div class="system-info-item">
+            <span class="system-info-label">System size</span>
+            <span class="system-info-val" id="siSize">—</span>
+          </div>
+          <div class="system-info-item">
+            <span class="system-info-label">Commissioned</span>
+            <span class="system-info-val" id="siDate">—</span>
+          </div>
+          <div class="system-info-item">
+            <span class="system-info-label">Forecast annual</span>
+            <span class="system-info-val" id="siForecast">—</span>
+          </div>
+          <div class="system-info-item">
+            <span class="system-info-label">Location</span>
+            <span class="system-info-val" id="siLocation">—</span>
+          </div>
+          <div class="system-info-item">
+            <span class="system-info-label">Inverter</span>
+            <span class="system-info-val" id="siInverter">—</span>
+          </div>
+        </div>
+
+        <!-- stat tiles -->
+        <div class="coverage" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stat actual">
+            <div class="lbl">Generation to date</div>
+            <div class="val" id="tileGenActual">—<span class="unit"> kWh</span></div>
+            <div class="sub" id="tileGenSub">vs — kWh forecast</div>
+          </div>
+          <div class="stat estimated">
+            <div class="lbl">Performance ratio</div>
+            <div class="val" id="tilePR">—<span class="unit">%</span></div>
+            <div class="sub">industry benchmark 75–85%</div>
+          </div>
+          <div class="stat rows">
+            <div class="lbl">Estimated savings</div>
+            <div class="val" id="tileSavings" style="color:#2a8a4e;">—</div>
+            <div class="sub" id="tileSavingsSub">vs — projected</div>
+          </div>
+          <div class="stat">
+            <div class="lbl">System health</div>
+            <div class="val" id="tileHealth" style="font-size:18px;">—</div>
+            <div class="sub" id="tileHealthSub">—</div>
+          </div>
+        </div>
+
+        <!-- fit indicators -->
+        <div class="fit-row" id="fitRow">
+          <div class="fit-card">
+            <div class="fit-card-head">
+              <span class="fit-card-label">Generation</span>
+              <span class="fit-status" id="fitGenStatus">—</span>
+            </div>
+            <div class="fit-actual" id="fitGenActual">—<span class="unit"> kWh</span></div>
+            <div class="fit-vs">Forecast: <strong id="fitGenForecast">—</strong></div>
+            <div class="fit-bar-wrap"><div class="fit-bar-fill" id="fitGenBar" style="width:0%"></div></div>
+          </div>
+          <div class="fit-card">
+            <div class="fit-card-head">
+              <span class="fit-card-label">Self-consumption</span>
+              <span class="fit-status" id="fitSCStatus">—</span>
+            </div>
+            <div class="fit-actual" id="fitSCActual">—<span class="unit">%</span></div>
+            <div class="fit-vs">Forecast: <strong id="fitSCForecast">—</strong></div>
+            <div class="fit-bar-wrap"><div class="fit-bar-fill" id="fitSCBar" style="width:0%"></div></div>
+          </div>
+          <div class="fit-card">
+            <div class="fit-card-head">
+              <span class="fit-card-label">Savings</span>
+              <span class="fit-status" id="fitSavStatus">—</span>
+            </div>
+            <div class="fit-actual" id="fitSavActual">—</div>
+            <div class="fit-vs">Projected: <strong id="fitSavForecast">—</strong></div>
+            <div class="fit-bar-wrap"><div class="fit-bar-fill" id="fitSavBar" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <!-- Monthly actual vs forecast chart -->
+        <div class="card as-section">
+          <div class="as-section-head">
+            <span class="as-section-title">Monthly generation — actual vs. forecast</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">kWh / month</span>
+          </div>
+          <div class="as-section-body">
+            <div class="chart-wrap" style="height:220px;">
+              <canvas id="monthlyChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cumulative chart -->
+        <div class="card as-section">
+          <div class="as-section-head">
+            <span class="as-section-title">Cumulative generation</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">Running total since commissioning</span>
+          </div>
+          <div class="as-section-body">
+            <div class="chart-wrap" style="height:180px;">
+              <canvas id="cumulChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PR + weather context side-by-side -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+          <!-- Performance ratio -->
+          <div class="card">
+            <div class="as-section-head">
+              <span class="as-section-title">Performance ratio</span>
+              <span style="font-size:11px;color:var(--muted);font-weight:600;">Irradiance-adjusted</span>
+            </div>
+            <div class="as-section-body">
+              <div class="pr-strip">
+                <div>
+                  <div class="pr-meta-label">Current PR</div>
+                  <div class="pr-number good" id="prValue">91<span class="pct">%</span></div>
+                </div>
+                <div class="pr-meta">
+                  <div class="pr-benchmark" id="prBenchmark">
+                    Industry benchmark: <strong>75–85%</strong><br>
+                    This system is performing <strong>above benchmark</strong>.<br>
+                    PR is stable over the past 6 months — no degradation detected.
+                  </div>
+                </div>
+              </div>
+              <div class="chart-wrap" style="height:130px;margin-top:14px;">
+                <canvas id="prChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weather context -->
+          <div class="card">
+            <div class="as-section-head">
+              <span class="as-section-title">Weather context</span>
+              <span style="font-size:11px;color:var(--muted);font-weight:600;">Variance attribution</span>
+            </div>
+            <div class="as-section-body">
+              <div class="weather-card" id="weatherCard">
+                <div class="weather-label">Assure assessment</div>
+                <div class="weather-statement" id="weatherStatement">—</div>
+                <div class="weather-factors" id="weatherFactors"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Savings & payback -->
+        <div class="card as-section">
+          <div class="as-section-head">
+            <span class="as-section-title">Savings &amp; payback tracker</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">Based on actual generation performance</span>
+          </div>
+          <div class="as-section-body">
+            <div class="payback-grid" id="paybackGrid">
+              <div class="payback-item">
+                <div class="payback-item-label">Savings to date (actual)</div>
+                <div class="payback-item-val positive" id="pbSavingsActual">—</div>
+                <div class="payback-item-sub" id="pbSavingsSub">since commissioning</div>
+              </div>
+              <div class="payback-item">
+                <div class="payback-item-label">Savings to date (projected)</div>
+                <div class="payback-item-val" id="pbSavingsProj">—</div>
+                <div class="payback-item-sub">from original design</div>
+              </div>
+              <div class="payback-item">
+                <div class="payback-item-label">Original payback period</div>
+                <div class="payback-item-val" id="pbOriginal">—</div>
+                <div class="payback-item-sub">from design document</div>
+              </div>
+              <div class="payback-item">
+                <div class="payback-item-label">Updated payback (actual PR)</div>
+                <div class="payback-item-val" id="pbUpdated">—</div>
+                <div class="payback-item-sub" id="pbUpdatedSub">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System health flags -->
+        <div class="card as-section">
+          <div class="as-section-head">
+            <span class="as-section-title">System health flags</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">Automated monitoring</span>
+          </div>
+          <div class="flag-list" id="flagList"></div>
+        </div>
+
+      </main>
+    </section>
+  </div>
+</div>
+
+<div id="flexModalContainer"></div>
+
+<script src="data/sites_and_customers.js"></script>
+<script src="assets/flex-platform.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+/* =========================================================
+   Flex:Assure — page logic
+   ========================================================= */
+
+var DARK = document.documentElement.getAttribute('data-theme') === 'dark';
+function gridColour() { return DARK ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'; }
+function textColour() { return DARK ? '#8a8278' : '#888278'; }
+var RUST     = '#ec5f30';
+var SAPPHIRE = '#5597d1';
+var STEEL    = '#a2a09e';
+var GREEN    = '#2a8a4e';
+
+/* ---- Seeded PRNG ---- */
+function seeded(seed) {
+  var s = seed;
+  return function () {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+/* ---- NZ solar monthly shape (relative to annual mean = 1.0) ---- */
+/* Indexed Jan–Dec; NZ summer = Dec/Jan high, winter = Jun/Jul low */
+var NZ_SOLAR = [1.35, 1.22, 1.08, 0.88, 0.72, 0.58, 0.62, 0.75, 0.95, 1.12, 1.25, 1.38];
+
+/* ---- Sites ---- */
+var SITES = [];
+(function () {
+  var raw = (window.FlexData && window.FlexData.sites) ? window.FlexData.sites : [];
+  raw.forEach(function (s) { if (s.name) SITES.push(s); });
+  if (!SITES.length) {
+    SITES = [
+      { id: 504, name: 'Ashhurst School', primary_address: '96 Cambridge Avenue, Ashhurst', pv_size_kwp: 39.6, inverter_size_kw: 30 },
+      { id: 439, name: 'Wairakei Primary', primary_address: '2 Kauri Drive, Wairakei', pv_size_kwp: 22.1, inverter_size_kw: 20 },
+      { id: 491, name: 'Keith Andrews',    primary_address: '131 Roscommon Road, Wiri',   pv_size_kwp: 99.4, inverter_size_kw: 80 }
+    ];
+  }
+})();
+var currentSiteId = SITES[0] ? SITES[0].id : 504;
+
+/* ---- Site selector ---- */
+(function () {
+  var sel = document.getElementById('siteSelect');
+  SITES.forEach(function (s) {
+    var opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name + (s.primary_address ? ' — ' + s.primary_address : '');
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', function () {
+    currentSiteId = parseInt(this.value, 10);
+    var site = SITES.filter(function (s) { return s.id === currentSiteId; })[0];
+    if (site) document.getElementById('breadcrumbSite').textContent = site.name.toUpperCase();
+    render();
+  });
+  if (SITES[0]) document.getElementById('breadcrumbSite').textContent = SITES[0].name.toUpperCase();
+})();
+
+/* ---- Chart instances ---- */
+var monthlyChartInst = null;
+var cumulChartInst   = null;
+var prChartInst      = null;
+
+/* ---- Period ---- */
+var currentPeriod = '12m';
+function setPeriod(btn, p) {
+  document.querySelectorAll('.period-tab').forEach(function (b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  currentPeriod = p;
+  render();
+}
+
+/* ---- Main render ---- */
+function render() {
+  var site = SITES.filter(function (s) { return s.id === currentSiteId; })[0] || SITES[0];
+  var rand = seeded(currentSiteId * 37 + 11);
+
+  /* System parameters */
+  var kwp = site.pv_size_kwp || (30 + rand() * 70);
+  var inverterKw = site.inverter_size_kw || Math.round(kwp * 0.8);
+  var annualForecastKwh = Math.round(kwp * (1150 + rand() * 150)); /* NZ typical 1150–1300 kWh/kWp */
+  var commissionedMonthsAgo = Math.round(14 + rand() * 10);        /* 14–24 months ago */
+  var commDate = new Date(2026, 3, 1); /* Apr 2026 */
+  commDate.setMonth(commDate.getMonth() - commissionedMonthsAgo);
+  var commStr = commDate.toLocaleDateString('en-NZ', { month: 'long', year: 'numeric' });
+  var tariffRate = 0.28 + rand() * 0.06; /* 28–34 c/kWh avoided cost */
+  var systemCost = Math.round(kwp * (1800 + rand() * 400)); /* $1800–$2200/kWp */
+  var projAnnualSaving = Math.round(annualForecastKwh * 0.75 * tariffRate); /* ~75% self-consumed */
+  var projPayback = Math.round((systemCost / projAnnualSaving) * 10) / 10;
+
+  /* PR (performance ratio): 82–96% depending on site */
+  var prBase = 0.82 + rand() * 0.14;
+  var prStatus = prBase >= 0.88 ? 'good' : prBase >= 0.78 ? 'warn' : 'bad';
+
+  /* Derive period */
+  var monthsInPeriod = currentPeriod === '3m' ? 3 : currentPeriod === '6m' ? 6 : currentPeriod === 'all' ? commissionedMonthsAgo : 12;
+  monthsInPeriod = Math.min(monthsInPeriod, commissionedMonthsAgo);
+
+  /* Generate monthly data — April backwards */
+  var MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var forecastMonths = [], actualMonths = [], labels = [];
+  var monthlyMean = annualForecastKwh / 12;
+
+  for (var i = monthsInPeriod - 1; i >= 0; i--) {
+    var d = new Date(2026, 3 - i, 1); /* working backwards from Apr 2026 */
+    var mIdx = ((d.getMonth()) + 12) % 12;
+    var seasonal = NZ_SOLAR[mIdx];
+    var fcast = Math.round(monthlyMean * seasonal);
+    var variance = 0.88 + rand() * 0.18; /* actual = 88–106% of forecast */
+    var actual = Math.round(fcast * variance * prBase);
+    forecastMonths.push(fcast);
+    actualMonths.push(actual);
+    labels.push(MONTH_NAMES[mIdx] + ' ' + d.getFullYear().toString().slice(2));
+  }
+
+  var totalForecast = forecastMonths.reduce(function (a, b) { return a + b; }, 0);
+  var totalActual   = actualMonths.reduce(function (a, b) { return a + b; }, 0);
+  var pctOfForecast = totalActual / totalForecast;
+
+  /* Self-consumption synthetic */
+  var scForecast = 0.72 + rand() * 0.08;
+  var scActual   = scForecast * (0.94 + rand() * 0.12);
+  scActual = Math.min(scActual, 0.99);
+
+  /* Savings */
+  var savActual = Math.round(totalActual * scActual * tariffRate);
+  var savForecast = Math.round(totalForecast * scForecast * tariffRate);
+
+  /* --- Update system info strip --- */
+  document.getElementById('siSize').textContent      = kwp.toFixed(1) + ' kWp';
+  document.getElementById('siDate').textContent      = commStr;
+  document.getElementById('siForecast').textContent  = (annualForecastKwh / 1000).toFixed(1) + ' MWh / year';
+  document.getElementById('siLocation').textContent  = (site.primary_address || '').split(',').slice(-2).join(',').trim() || 'New Zealand';
+  document.getElementById('siInverter').textContent  = inverterKw + ' kW inverter';
+
+  /* --- Stat tiles --- */
+  document.getElementById('tileGenActual').innerHTML = Math.round(totalActual / 1000 * 10) / 10 + '<span class="unit"> MWh</span>';
+  document.getElementById('tileGenSub').textContent  = 'vs ' + (totalForecast / 1000).toFixed(1) + ' MWh forecast';
+
+  var prPct = Math.round(prBase * 100);
+  document.getElementById('tilePR').innerHTML = prPct + '<span class="unit">%</span>';
+
+  document.getElementById('tileSavings').textContent    = '$' + savActual.toLocaleString();
+  document.getElementById('tileSavingsSub').textContent = 'vs $' + savForecast.toLocaleString() + ' projected';
+
+  var healthTxt = prBase >= 0.88 ? 'Healthy' : prBase >= 0.78 ? 'Monitor' : 'Attention';
+  var healthCol = prBase >= 0.88 ? GREEN : prBase >= 0.78 ? '#9a7200' : RUST;
+  document.getElementById('tileHealth').textContent    = healthTxt;
+  document.getElementById('tileHealth').style.color    = healthCol;
+  document.getElementById('tileHealthSub').textContent = prPct + '% PR &mdash; ' + (prBase >= 0.88 ? 'no flags' : 'see flags below');
+
+  /* --- Fit indicators --- */
+  var genStatus   = pctOfForecast >= 0.97 ? 'on-track' : pctOfForecast >= 0.90 ? 'below' : 'below';
+  var genLabel    = pctOfForecast >= 0.97 ? 'On track' : 'Below forecast';
+  var scStatus    = scActual >= scForecast * 0.97 ? 'on-track' : scActual > scForecast ? 'above' : 'below';
+  var scLabel     = scActual >= scForecast * 0.97 ? 'On track' : scActual > scForecast ? 'Above forecast' : 'Below forecast';
+  var savStatus   = savActual >= savForecast * 0.97 ? 'on-track' : 'below';
+  var savLabel    = savStatus === 'on-track' ? 'On track' : 'Below projected';
+
+  setFitCard('fitGenStatus', 'fitGenActual', 'fitGenForecast', 'fitGenBar',
+    genStatus, genLabel, (totalActual/1000).toFixed(1) + ' MWh', (totalForecast/1000).toFixed(1) + ' MWh',
+    pctOfForecast, genStatus === 'on-track' ? 'good' : 'warn');
+
+  setFitCard('fitSCStatus', 'fitSCActual', 'fitSCForecast', 'fitSCBar',
+    scStatus, scLabel, Math.round(scActual * 100) + '%', Math.round(scForecast * 100) + '%',
+    scActual / scForecast, scStatus === 'below' ? 'warn' : 'great');
+
+  setFitCard('fitSavStatus', 'fitSavActual', 'fitSavForecast', 'fitSavBar',
+    savStatus, savLabel, '$' + savActual.toLocaleString(), '$' + savForecast.toLocaleString(),
+    savActual / savForecast, savStatus === 'on-track' ? 'good' : 'warn');
+
+  /* --- Monthly bar chart --- */
+  if (monthlyChartInst) monthlyChartInst.destroy();
+  var mCtx = document.getElementById('monthlyChart').getContext('2d');
+  monthlyChartInst = new Chart(mCtx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Forecast',  data: forecastMonths, backgroundColor: 'rgba(162,160,158,0.35)', borderColor: STEEL, borderWidth: 1, barPercentage: 0.7 },
+        { label: 'Actual',    data: actualMonths,   backgroundColor: SAPPHIRE, barPercentage: 0.7 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { color: textColour(), font: { size: 11, weight: '700' }, boxWidth: 14, padding: 12 } },
+        tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + c.raw.toLocaleString() + ' kWh'; } } }
+      },
+      scales: {
+        x: { grid: { color: gridColour() }, ticks: { color: textColour(), font: { size: 10 }, maxTicksLimit: 12 } },
+        y: { grid: { color: gridColour() }, ticks: { color: textColour(), font: { size: 10 }, callback: function (v) { return (v/1000).toFixed(1) + 'k'; } } }
+      }
+    }
+  });
+
+  /* --- Cumulative chart --- */
+  var cumForecast = [], cumActual = [], cumRunF = 0, cumRunA = 0;
+  forecastMonths.forEach(function (f, i) { cumRunF += f; cumRunA += actualMonths[i]; cumForecast.push(cumRunF); cumActual.push(cumRunA); });
+
+  if (cumulChartInst) cumulChartInst.destroy();
+  var cCtx = document.getElementById('cumulChart').getContext('2d');
+  cumulChartInst = new Chart(cCtx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Forecast',  data: cumForecast, borderColor: STEEL,    backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, borderDash: [5,3], tension: 0.3 },
+        { label: 'Actual',    data: cumActual,   borderColor: SAPPHIRE, backgroundColor: 'rgba(85,151,209,0.08)', fill: true, borderWidth: 2, pointRadius: 0, tension: 0.3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { color: textColour(), font: { size: 11, weight: '700' }, boxWidth: 14, padding: 12 } },
+        tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + (c.raw/1000).toFixed(1) + ' MWh'; } } }
+      },
+      scales: {
+        x: { grid: { color: gridColour() }, ticks: { color: textColour(), font: { size: 10 }, maxTicksLimit: 12 } },
+        y: { grid: { color: gridColour() }, ticks: { color: textColour(), font: { size: 10 }, callback: function (v) { return (v/1000).toFixed(0) + 'k'; } } }
+      }
+    }
+  });
+
+  /* --- PR trend chart (12 monthly PR values) --- */
+  var prMonths = [], prRand = seeded(currentSiteId * 53 + 7);
+  for (var j = 0; j < monthsInPeriod; j++) {
+    prMonths.push(Math.round((prBase * 100) + (prRand() - 0.5) * 8));
+  }
+  if (prChartInst) prChartInst.destroy();
+  var pCtx = document.getElementById('prChart').getContext('2d');
+  prChartInst = new Chart(pCtx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'PR %', data: prMonths, borderColor: prStatus === 'good' ? GREEN : RUST, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 2, tension: 0.3 },
+        { label: 'Benchmark', data: labels.map(function () { return 80; }), borderColor: STEEL, backgroundColor: 'transparent', borderWidth: 1, pointRadius: 0, borderDash: [4, 3] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { color: textColour(), font: { size: 10, weight: '700' }, boxWidth: 12, padding: 10 } },
+        tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + c.raw + '%'; } } }
+      },
+      scales: {
+        x: { grid: { color: gridColour() }, ticks: { color: textColour(), font: { size: 9 }, maxTicksLimit: 8 } },
+        y: { min: 60, max: 105, grid: { color: gridColour() }, ticks: { color: textColour(), font: { size: 9 }, callback: function (v) { return v + '%'; } } }
+      }
+    }
+  });
+
+  /* --- PR tile update --- */
+  document.getElementById('prValue').className = 'pr-number ' + prStatus;
+  document.getElementById('prValue').innerHTML = prPct + '<span class="pct">%</span>';
+  var prMsg = prBase >= 0.88
+    ? 'This system is performing <strong>above benchmark</strong>. PR is stable — no degradation detected.'
+    : prBase >= 0.78
+      ? 'PR is <strong>within benchmark</strong> but tracking in the lower half. Worth monitoring over the next 3 months.'
+      : 'PR is <strong>below the industry benchmark</strong>. Investigation recommended — potential panel soiling, shading, or inverter issue.';
+  document.getElementById('prBenchmark').innerHTML = 'Industry benchmark: <strong>75–85%</strong><br>' + prMsg;
+
+  /* --- Weather context --- */
+  var deviation = Math.round((1 - pctOfForecast) * 100);
+  var weatherStmt, factors;
+  if (deviation <= 3) {
+    weatherStmt = 'Solar generation is within 3% of forecast for this period. Performance is consistent with modelled irradiance for the location and season — no fault or weather-related shortfall detected.';
+    factors = [{ label: 'Irradiance: normal', primary: false }, { label: 'No faults detected', primary: false }, { label: 'PR within range', primary: false }];
+  } else if (deviation <= 10) {
+    weatherStmt = 'Solar generation is ' + deviation + '% below forecast for this period. Flex:Assure attributes the shortfall primarily to recorded cloud cover — irradiance was below the design assumption for ' + (Math.round(rand() * 3) + 2) + ' days this period. No system fault found.';
+    factors = [{ label: 'Cloud cover', primary: true }, { label: 'Seasonal variation', primary: false }, { label: 'No fault detected', primary: false }];
+  } else {
+    weatherStmt = 'Solar generation is ' + deviation + '% below forecast. This level of underperformance warrants investigation. Irradiance data for this period is within 5% of design — weather alone does not explain the shortfall. Panel soiling or inverter clipping may be a factor.';
+    factors = [{ label: 'Possible soiling', primary: true }, { label: 'Inverter check recommended', primary: true }, { label: 'Irradiance within range', primary: false }];
+  }
+  document.getElementById('weatherStatement').textContent = weatherStmt;
+  var fDiv = document.getElementById('weatherFactors');
+  fDiv.innerHTML = '';
+  factors.forEach(function (f) {
+    var span = document.createElement('span');
+    span.className = 'weather-factor' + (f.primary ? ' primary' : '');
+    span.textContent = f.label;
+    fDiv.appendChild(span);
+  });
+
+  /* --- Savings & payback --- */
+  var totalSavActual = Math.round(totalActual * scActual * tariffRate);
+  var totalSavProj   = Math.round(totalForecast * scForecast * tariffRate);
+  var updatedPayback = Math.round(projPayback / prBase * 10) / 10;
+  document.getElementById('pbSavingsActual').textContent = '$' + totalSavActual.toLocaleString();
+  document.getElementById('pbSavingsSub').textContent    = 'since ' + commStr;
+  document.getElementById('pbSavingsProj').textContent   = '$' + totalSavProj.toLocaleString();
+  document.getElementById('pbOriginal').textContent      = projPayback.toFixed(1) + ' years';
+  document.getElementById('pbUpdated').textContent       = updatedPayback.toFixed(1) + ' years';
+  document.getElementById('pbUpdatedSub').textContent    = updatedPayback <= projPayback + 0.5 ? 'On track with design' : 'Revised — ' + (updatedPayback - projPayback).toFixed(1) + ' yr longer than design';
+
+  /* --- Health flags --- */
+  renderFlags(prBase, deviation);
+}
+
+function setFitCard(statusId, actualId, forecastId, barId, status, label, actual, forecast, ratio, barClass) {
+  document.getElementById(statusId).textContent  = label;
+  document.getElementById(statusId).className    = 'fit-status ' + status;
+  document.getElementById(actualId).innerHTML    = actual + (actualId === 'fitGenActual' ? '' : '');
+  document.getElementById(forecastId).textContent = forecast;
+  var pct = Math.min(Math.max(ratio * 100, 0), 100);
+  document.getElementById(barId).style.width     = pct + '%';
+  document.getElementById(barId).className       = 'fit-bar-fill ' + barClass;
+}
+
+function renderFlags(pr, deviation) {
+  var list = document.getElementById('flagList');
+  list.innerHTML = '';
+  var flags = [];
+
+  if (pr >= 0.88) {
+    flags.push({ colour: 'green', title: 'PR within healthy range', desc: 'Performance ratio has been above 85% for the past 6 months. No degradation detected.', date: 'Ongoing' });
+  } else if (pr >= 0.78) {
+    flags.push({ colour: 'amber', title: 'PR tracking in lower benchmark range', desc: 'Performance ratio is between 78–85%. Acceptable, but monitor for further decline over the next 3 months.', date: 'Last 30 days' });
+  } else {
+    flags.push({ colour: 'red', title: 'PR below industry benchmark', desc: 'Performance ratio has dropped below 75%. Investigation recommended — possible panel soiling, shading change, or inverter issue.', date: 'Current' });
+  }
+
+  if (deviation > 10) {
+    flags.push({ colour: 'red', title: 'Generation significantly below forecast', desc: deviation + '% below modelled forecast for the period. Irradiance data does not account for the full shortfall — site inspection recommended.', date: 'Current period' });
+  } else if (deviation > 3) {
+    flags.push({ colour: 'amber', title: 'Minor generation shortfall', desc: deviation + '% below forecast. Consistent with recorded cloud cover and seasonal variation for the period — no action required.', date: 'Current period' });
+  } else {
+    flags.push({ colour: 'green', title: 'Generation tracking forecast', desc: 'Within 3% of modelled forecast for the selected period. No shortfall detected.', date: 'Current period' });
+  }
+
+  flags.push({ colour: 'green', title: 'No zero-generation days detected', desc: 'No days with unexplained zero or near-zero output in the selected period.', date: 'Last 90 days' });
+  flags.push({ colour: 'green', title: 'Inverter online and communicating', desc: 'Last telemetry received within the past 15 minutes. No fault codes logged.', date: 'Now' });
+
+  flags.forEach(function (f) {
+    var div = document.createElement('div');
+    div.className = 'flag-item';
+    div.innerHTML =
+      '<div class="flag-dot ' + f.colour + '"></div>' +
+      '<div class="flag-body"><div class="flag-title">' + f.title + '</div><div class="flag-desc">' + f.desc + '</div></div>' +
+      '<div class="flag-date">' + f.date + '</div>';
+    list.appendChild(div);
+  });
+}
+
+/* ---- Theme + sidebar ---- */
+document.getElementById('themeToggle').addEventListener('click', function () {
+  DARK = document.documentElement.getAttribute('data-theme') === 'dark';
+  render();
+});
+
+(function () {
+  var menuBtn  = document.getElementById('menuBtn');
+  var sidebar  = document.getElementById('sidebar');
+  var backdrop = document.getElementById('sidebarBackdrop');
+  var closeBtn = document.getElementById('sidebarClose');
+  function openSidebar()  { sidebar.classList.add('is-open'); backdrop.classList.add('is-visible'); }
+  function closeSidebar() { sidebar.classList.remove('is-open'); backdrop.classList.remove('is-visible'); }
+  menuBtn.addEventListener('click', openSidebar);
+  closeBtn.addEventListener('click', closeSidebar);
+  backdrop.addEventListener('click', closeSidebar);
+})();
+
+(function () {
+  var page = document.body.getAttribute('data-page');
+  document.querySelectorAll('[data-nav]').forEach(function (el) {
+    if (el.getAttribute('data-nav') === page) el.classList.add('is-active');
+  });
+})();
+
+/* ---- Boot ---- */
+render();
+</script>
+</body>
+</html>

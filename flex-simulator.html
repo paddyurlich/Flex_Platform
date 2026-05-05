@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flex:Simulator &mdash; Blackcurrent</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+
+  <style>
+    /* ---- Toolbar ---- */
+    .sim-toolbar {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .sim-site-select {
+      padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--charcoal);
+      background: var(--white); cursor: pointer; min-width: 240px; flex: 1;
+    }
+    .period-tabs { display: flex; gap: 4px; flex-shrink: 0; }
+    .period-tab {
+      padding: 7px 14px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-family: inherit; font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; cursor: pointer; background: var(--white); color: var(--muted);
+      transition: background 0.1s, color 0.1s, border-color 0.1s;
+    }
+    .period-tab.active, .period-tab:hover { background: var(--charcoal); color: var(--egg); border-color: var(--charcoal); }
+
+    /* ---- Two-column layout ---- */
+    .sim-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    /* ---- Config panel ---- */
+    .sim-config { display: flex; flex-direction: column; gap: 12px; }
+    .sim-config .card { margin-bottom: 0; }
+
+    .config-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px 11px; border-bottom: 1px solid var(--line);
+    }
+    .config-title {
+      font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--charcoal);
+    }
+    .config-body { padding: 14px 18px; }
+
+    /* Strategy presets */
+    .preset-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+    .preset-btn {
+      padding: 8px 6px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-family: inherit; font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; cursor: pointer; background: var(--white); color: var(--muted);
+      text-align: center; transition: all 0.1s;
+    }
+    .preset-btn.active { background: var(--charcoal); color: var(--egg); border-color: var(--charcoal); }
+    .preset-btn:hover:not(.active) { border-color: var(--charcoal); color: var(--charcoal); }
+
+    /* Battery schedule blocks */
+    .sim-schedule { display: flex; flex-direction: column; gap: 4px; }
+    .sim-block {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 10px; border-radius: 3px; border: 1px solid var(--line);
+      background: var(--bg);
+    }
+    .sim-block-time { font-size: 11px; font-weight: 700; color: var(--muted); min-width: 95px; }
+    .sim-block-mode {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 2px; flex: 1;
+    }
+    .sim-block-mode.charge    { background: rgba(85,151,209,.15); color: var(--sapphire); }
+    .sim-block-mode.discharge { background: rgba(236,95,48,.12); color: var(--rust); }
+    .sim-block-mode.hold      { background: rgba(162,160,158,.15); color: var(--steel); }
+    .sim-block-mode.auto      { background: rgba(34,32,29,.08); color: var(--charcoal); }
+
+    /* Config form rows */
+    .config-row { margin-bottom: 12px; }
+    .config-row:last-child { margin-bottom: 0; }
+    .config-lbl {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .config-select {
+      width: 100%; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--charcoal);
+      background: var(--white); cursor: pointer;
+    }
+    .config-range { width: 100%; accent-color: var(--rust); margin-top: 4px; }
+    .config-range-val { font-size: 13px; font-weight: 800; color: var(--rust); }
+    .config-time-row { display: flex; gap: 8px; align-items: center; }
+    .config-time-row span { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .config-time {
+      flex: 1; padding: 7px 8px; border: 1px solid var(--line-strong); border-radius: 3px;
+      font-family: inherit; font-size: 12px; font-weight: 700; color: var(--charcoal);
+      background: var(--white);
+    }
+
+    /* Run button */
+    .run-btn {
+      width: 100%; padding: 14px; background: var(--rust); color: var(--charcoal);
+      border: none; border-radius: 3px; font-family: inherit;
+      font-size: 13px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .run-btn:hover { opacity: 0.88; }
+    .run-btn.running { opacity: 0.6; cursor: not-allowed; }
+
+    /* ---- Results panel ---- */
+    .sim-results { display: flex; flex-direction: column; gap: 12px; }
+
+    /* Placeholder */
+    .results-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 400px; border: 2px dashed var(--line-strong); border-radius: 4px;
+      color: var(--muted); text-align: center; padding: 40px 20px;
+    }
+    .results-placeholder .ph-icon { font-size: 40px; margin-bottom: 14px; }
+    .results-placeholder strong { display: block; font-size: 15px; font-weight: 800; color: var(--charcoal); margin-bottom: 6px; }
+    .results-placeholder p { font-size: 13px; font-weight: 500; max-width: 260px; }
+
+    /* Loading state */
+    .results-loading {
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 400px; border: 1px solid var(--line); border-radius: 4px; background: var(--white);
+    }
+    .loading-label {
+      font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); margin-top: 16px;
+    }
+    .loading-bar-outer {
+      width: 180px; height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 8px;
+    }
+    .loading-bar-inner {
+      height: 100%; width: 0%; background: var(--rust); border-radius: 99px;
+      transition: width 1.8s ease-in-out;
+    }
+
+    /* Results content */
+    .results-content { display: none; flex-direction: column; gap: 12px; }
+
+    /* Comparison tile row */
+    .compare-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 4px;
+    }
+    .compare-tile {
+      border: 1px solid var(--line); border-radius: 4px; background: var(--white);
+      padding: 14px 16px;
+    }
+    .compare-tile.simulated { border-color: var(--sapphire); background: rgba(85,151,209,.04); }
+    .compare-tile-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 4px;
+    }
+    .compare-tile-val {
+      font-size: 28px; font-weight: 900; letter-spacing: -0.03em; color: var(--charcoal); line-height: 1;
+    }
+    .compare-tile-val .unit { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .compare-tile-sub { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 3px; }
+    .compare-tile-delta { font-size: 12px; font-weight: 800; margin-top: 6px; }
+    .compare-tile-delta.save { color: #2a8a4e; }
+    .compare-tile-delta.cost { color: var(--rust); }
+    .compare-tile-delta.neutral { color: var(--steel); }
+
+    /* Annualised banner */
+    .annualised-banner {
+      background: rgba(42,138,78,.07); border: 1.5px solid rgba(42,138,78,.3);
+      border-radius: 4px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .ann-icon { font-size: 24px; flex-shrink: 0; }
+    .ann-body { flex: 1; }
+    .ann-label { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #2a8a4e; margin-bottom: 3px; }
+    .ann-value { font-size: 22px; font-weight: 900; color: var(--charcoal); letter-spacing: -0.02em; }
+    .ann-sub { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+
+    /* Section label */
+    .results-section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px 11px; border-bottom: 1px solid var(--line);
+    }
+    .results-section-title { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--charcoal); }
+
+    /* Sensitivity sliders */
+    .sensitivity-grid { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px; }
+    .sens-row { display: flex; align-items: center; gap: 12px; }
+    .sens-label { font-size: 11px; font-weight: 700; color: var(--charcoal); min-width: 160px; }
+    .sens-range { flex: 1; accent-color: var(--sapphire); }
+    .sens-val { font-size: 12px; font-weight: 800; color: var(--sapphire); min-width: 52px; text-align: right; }
+
+    /* Chart */
+    .chart-wrap { position: relative; }
+    .chart-wrap canvas { max-width: 100%; }
+
+    /* Dark mode */
+    [data-theme="dark"] .sim-site-select { background: #1c1a17; color: #e8e3d6; border-color: #443f37; }
+    [data-theme="dark"] .preset-btn { background: #1c1a17; border-color: #443f37; }
+    [data-theme="dark"] .preset-btn.active { background: #e8e3d6; color: #0a0907; border-color: #e8e3d6; }
+    [data-theme="dark"] .preset-btn:hover:not(.active) { border-color: #e8e3d6; color: #e8e3d6; }
+    [data-theme="dark"] .config-title { color: #c8c3b8; }
+    [data-theme="dark"] .config-head { border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .sim-block { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .sim-block-mode.auto { background: rgba(232,227,214,.08); color: #c8c3b8; }
+    [data-theme="dark"] .config-select, [data-theme="dark"] .config-time { background: #1c1a17; color: #e8e3d6; border-color: #443f37; }
+    [data-theme="dark"] .results-placeholder { border-color: #2e2a25; }
+    [data-theme="dark"] .results-placeholder strong { color: #c8c3b8; }
+    [data-theme="dark"] .results-loading { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .loading-bar-outer { background: #2e2a25; }
+    [data-theme="dark"] .compare-tile { background: #1c1a17; border-color: #2e2a25; }
+    [data-theme="dark"] .compare-tile.simulated { background: rgba(85,151,209,.05); border-color: rgba(85,151,209,.35); }
+    [data-theme="dark"] .compare-tile-val { color: #e8e3d6; }
+    [data-theme="dark"] .ann-value { color: #e8e3d6; }
+    [data-theme="dark"] .results-section-head { border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .results-section-title { color: #c8c3b8; }
+    [data-theme="dark"] .sens-label { color: #c8c3b8; }
+
+    /* Mobile */
+    @media (max-width: 900px) {
+      .sim-layout { grid-template-columns: 1fr; }
+      .sim-toolbar { flex-direction: column; align-items: flex-start; }
+      .compare-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body data-page="simulator">
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio - Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="flex-simulator.html">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Help</div>
+        <a class="nav-item" data-nav="faq" href="flex-faq.html">FAQ</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">SITES / <strong id="breadcrumbSite">—</strong> / SIMULATOR</div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/><line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/></svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE CONTENT ============ -->
+      <main class="page">
+
+        <header class="page-head">
+          <div>
+            <h1>Flex:Simulator</h1>
+            <p class="page-sub">Backtest alternative strategies against real historical data before making changes.</p>
+          </div>
+          <span class="module-tag">Optimise</span>
+        </header>
+
+        <!-- Toolbar -->
+        <div class="sim-toolbar">
+          <select class="sim-site-select" id="siteSelect"></select>
+          <div class="period-tabs">
+            <button class="period-tab" onclick="setPeriod(this,'3m')">3 months</button>
+            <button class="period-tab active" onclick="setPeriod(this,'6m')">6 months</button>
+            <button class="period-tab" onclick="setPeriod(this,'12m')">12 months</button>
+          </div>
+        </div>
+
+        <!-- Main two-column layout -->
+        <div class="sim-layout">
+
+          <!-- ===== LEFT: STRATEGY CONFIG ===== -->
+          <div class="sim-config">
+
+            <!-- Battery strategy -->
+            <div class="card">
+              <div class="config-head">
+                <span class="config-title">Battery strategy</span>
+              </div>
+              <div class="config-body">
+                <div class="preset-row" id="presetRow">
+                  <button class="preset-btn active" onclick="setPreset(this,'offpeak')">Off-peak charge</button>
+                  <button class="preset-btn" onclick="setPreset(this,'solar')">Solar self-use</button>
+                  <button class="preset-btn" onclick="setPreset(this,'peakshave')">Peak shaving</button>
+                  <button class="preset-btn" onclick="setPreset(this,'custom')">Custom</button>
+                </div>
+                <div class="sim-schedule" id="scheduleBlocks"></div>
+              </div>
+            </div>
+
+            <!-- Tariff -->
+            <div class="card">
+              <div class="config-head">
+                <span class="config-title">Tariff to apply</span>
+              </div>
+              <div class="config-body">
+                <div class="config-row">
+                  <div class="config-lbl">Simulated tariff structure</div>
+                  <select class="config-select" id="tariffSelect" onchange="markDirty()">
+                    <option value="flat">Flat rate — 28 c/kWh (current)</option>
+                    <option value="tou" selected>Time-of-Use — Peak 38c / Off-peak 18c</option>
+                    <option value="demand">Demand + ToU — $12/kW + 32c/20c</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Load shifting -->
+            <div class="card">
+              <div class="config-head">
+                <span class="config-title">Load shifting</span>
+              </div>
+              <div class="config-body">
+                <div class="config-row">
+                  <div class="config-lbl">Average shift per day</div>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="range" class="config-range" id="shiftSlider" min="0" max="40" value="15" step="5" oninput="updateShiftLabel();markDirty();" />
+                    <span class="config-range-val" id="shiftLabel">15 kWh</span>
+                  </div>
+                </div>
+                <div class="config-row">
+                  <div class="config-lbl">Shift from window</div>
+                  <div class="config-time-row">
+                    <input type="time" class="config-time" id="shiftFromStart" value="17:00" onchange="markDirty()" />
+                    <span>to</span>
+                    <input type="time" class="config-time" id="shiftFromEnd" value="21:00" onchange="markDirty()" />
+                  </div>
+                </div>
+                <div class="config-row">
+                  <div class="config-lbl">Move to window</div>
+                  <div class="config-time-row">
+                    <input type="time" class="config-time" id="shiftToStart" value="00:00" onchange="markDirty()" />
+                    <span>to</span>
+                    <input type="time" class="config-time" id="shiftToEnd" value="07:00" onchange="markDirty()" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Battery constraints -->
+            <div class="card">
+              <div class="config-head">
+                <span class="config-title">Battery constraints</span>
+              </div>
+              <div class="config-body">
+                <div class="config-row">
+                  <div class="config-lbl" style="display:flex;justify-content:space-between;">
+                    <span>Minimum SoC</span><span class="config-range-val" id="socMinLabel">15%</span>
+                  </div>
+                  <input type="range" class="config-range" id="socMin" min="0" max="40" value="15" step="5"
+                    oninput="document.getElementById('socMinLabel').textContent=this.value+'%';markDirty();" />
+                </div>
+                <div class="config-row">
+                  <div class="config-lbl" style="display:flex;justify-content:space-between;">
+                    <span>Maximum SoC</span><span class="config-range-val" id="socMaxLabel">100%</span>
+                  </div>
+                  <input type="range" class="config-range" id="socMax" min="60" max="100" value="100" step="5"
+                    oninput="document.getElementById('socMaxLabel').textContent=this.value+'%';markDirty();" />
+                </div>
+              </div>
+            </div>
+
+            <button class="run-btn" id="runBtn" onclick="runSimulation()">Run simulation</button>
+
+            <p style="font-size:11px;color:var(--muted);font-weight:500;text-align:center;margin-top:4px;line-height:1.5;">
+              Results are model estimates, not financial guarantees.
+            </p>
+
+          </div>
+
+          <!-- ===== RIGHT: RESULTS ===== -->
+          <div class="sim-results" id="simResultsCol">
+
+            <!-- Placeholder -->
+            <div class="results-placeholder" id="resultsPlaceholder">
+              <div class="ph-icon">&#9654;</div>
+              <strong>No simulation run yet</strong>
+              <p>Configure your strategy on the left and click Run simulation to see results.</p>
+            </div>
+
+            <!-- Loading -->
+            <div class="results-loading" id="resultsLoading">
+              <div style="font-size:28px;">&#9202;</div>
+              <div class="loading-label">Replaying historical data&hellip;</div>
+              <div class="loading-bar-outer"><div class="loading-bar-inner" id="loadingBar"></div></div>
+            </div>
+
+            <!-- Results content -->
+            <div class="results-content" id="resultsContent">
+
+              <!-- Strategy name -->
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
+                <div>
+                  <div style="font-size:10px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);">Simulation result</div>
+                  <div style="font-size:16px;font-weight:800;color:var(--charcoal);letter-spacing:-0.01em;" id="strategyName">Off-peak charge + Time-of-Use</div>
+                </div>
+                <button onclick="openExportModal()" style="padding:8px 16px;border:1px solid var(--line-strong);border-radius:3px;font-family:inherit;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;background:var(--white);color:var(--muted);">Export results</button>
+              </div>
+
+              <!-- Annualised banner -->
+              <div class="annualised-banner" id="annBanner">
+                <div class="ann-icon">&#128200;</div>
+                <div class="ann-body">
+                  <div class="ann-label">Annualised projection</div>
+                  <div class="ann-value" id="annValue">—</div>
+                  <div class="ann-sub" id="annSub">—</div>
+                </div>
+              </div>
+
+              <!-- Cost comparison -->
+              <div class="card">
+                <div class="results-section-head">
+                  <span class="results-section-title">Electricity cost</span>
+                  <span style="font-size:11px;color:var(--muted);font-weight:600;" id="periodLabel">6-month period</span>
+                </div>
+                <div style="padding:14px 16px;">
+                  <div class="compare-row">
+                    <div class="compare-tile">
+                      <div class="compare-tile-label">Actual (current strategy)</div>
+                      <div class="compare-tile-val" id="costActual">—</div>
+                      <div class="compare-tile-sub" id="costActualSub">—</div>
+                    </div>
+                    <div class="compare-tile simulated">
+                      <div class="compare-tile-label">Simulated (new strategy)</div>
+                      <div class="compare-tile-val" id="costSim">—</div>
+                      <div class="compare-tile-sub" id="costSimSub">—</div>
+                      <div class="compare-tile-delta save" id="costDelta">—</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Self-sufficiency + import/export -->
+              <div class="card">
+                <div class="results-section-head">
+                  <span class="results-section-title">Self-sufficiency &amp; grid flows</span>
+                </div>
+                <div style="padding:14px 16px;">
+                  <div class="compare-row">
+                    <div class="compare-tile">
+                      <div class="compare-tile-label">Self-sufficiency — actual</div>
+                      <div class="compare-tile-val" id="ssActual">—<span class="unit">%</span></div>
+                      <div class="compare-tile-sub">share of consumption met without grid</div>
+                    </div>
+                    <div class="compare-tile simulated">
+                      <div class="compare-tile-label">Self-sufficiency — simulated</div>
+                      <div class="compare-tile-val" id="ssSim">—<span class="unit">%</span></div>
+                      <div class="compare-tile-sub">share of consumption met without grid</div>
+                      <div class="compare-tile-delta" id="ssDelta">—</div>
+                    </div>
+                  </div>
+                  <div class="compare-row" style="margin-top:10px;">
+                    <div class="compare-tile">
+                      <div class="compare-tile-label">Grid import — actual</div>
+                      <div class="compare-tile-val" id="importActual">—<span class="unit"> MWh</span></div>
+                    </div>
+                    <div class="compare-tile simulated">
+                      <div class="compare-tile-label">Grid import — simulated</div>
+                      <div class="compare-tile-val" id="importSim">—<span class="unit"> MWh</span></div>
+                      <div class="compare-tile-delta" id="importDelta">—</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Monthly delta chart -->
+              <div class="card">
+                <div class="results-section-head">
+                  <span class="results-section-title">Monthly saving — simulated vs. actual</span>
+                  <span style="font-size:11px;color:var(--muted);font-weight:600;">$ saved per month</span>
+                </div>
+                <div style="padding:16px 18px;">
+                  <div class="chart-wrap" style="height:180px;">
+                    <canvas id="deltaChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sensitivity -->
+              <div class="card">
+                <div class="results-section-head">
+                  <span class="results-section-title">Sensitivity</span>
+                  <span style="font-size:11px;color:var(--muted);font-weight:600;">Adjust assumptions — results update live</span>
+                </div>
+                <div class="sensitivity-grid">
+                  <div class="sens-row">
+                    <span class="sens-label">Electricity price</span>
+                    <input type="range" class="sens-range" id="sensPrice" min="18" max="45" value="28" step="1" oninput="updateSensitivity()" />
+                    <span class="sens-val" id="sensPriceVal">28 c/kWh</span>
+                  </div>
+                  <div class="sens-row">
+                    <span class="sens-label">Off-peak rate</span>
+                    <input type="range" class="sens-range" id="sensOffpeak" min="10" max="28" value="18" step="1" oninput="updateSensitivity()" />
+                    <span class="sens-val" id="sensOffpeakVal">18 c/kWh</span>
+                  </div>
+                  <div class="sens-row">
+                    <span class="sens-label">Daily consumption</span>
+                    <input type="range" class="sens-range" id="sensDemand" min="-30" max="30" value="0" step="5" oninput="updateSensitivity()" />
+                    <span class="sens-val" id="sensDemandVal">Baseline</span>
+                  </div>
+                  <div style="padding:10px 0 4px;border-top:1px solid var(--line);margin-top:4px;">
+                    <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Sensitivity-adjusted annual saving</div>
+                    <div style="font-size:24px;font-weight:800;color:#2a8a4e;letter-spacing:-0.02em;" id="sensitivityResult">—</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </section>
+  </div>
+</div>
+
+<div id="flexModalContainer"></div>
+
+<script src="data/sites_and_customers.js"></script>
+<script src="assets/flex-platform.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+/* =========================================================
+   Flex:Simulator — page logic
+   ========================================================= */
+
+var DARK = document.documentElement.getAttribute('data-theme') === 'dark';
+function gridColour() { return DARK ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'; }
+function textColour() { return DARK ? '#8a8278' : '#888278'; }
+var RUST     = '#ec5f30';
+var SAPPHIRE = '#5597d1';
+var STEEL    = '#a2a09e';
+var GREEN    = '#2a8a4e';
+
+/* ---- Seeded PRNG ---- */
+function seeded(seed) {
+  var s = seed;
+  return function () { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+}
+
+/* ---- Battery schedule presets ---- */
+var PRESETS = {
+  offpeak:   [
+    { start: '00:00', end: '07:00', mode: 'charge' },
+    { start: '07:00', end: '17:00', mode: 'auto' },
+    { start: '17:00', end: '21:00', mode: 'discharge' },
+    { start: '21:00', end: '00:00', mode: 'hold' }
+  ],
+  solar: [
+    { start: '00:00', end: '09:00', mode: 'hold' },
+    { start: '09:00', end: '17:00', mode: 'auto' },
+    { start: '17:00', end: '21:00', mode: 'discharge' },
+    { start: '21:00', end: '00:00', mode: 'hold' }
+  ],
+  peakshave: [
+    { start: '00:00', end: '06:00', mode: 'charge' },
+    { start: '06:00', end: '10:00', mode: 'discharge' },
+    { start: '10:00', end: '16:00', mode: 'auto' },
+    { start: '16:00', end: '20:00', mode: 'discharge' },
+    { start: '20:00', end: '00:00', mode: 'charge' }
+  ],
+  custom: [
+    { start: '00:00', end: '06:00', mode: 'charge' },
+    { start: '06:00', end: '08:00', mode: 'hold' },
+    { start: '08:00', end: '17:00', mode: 'auto' },
+    { start: '17:00', end: '21:00', mode: 'discharge' },
+    { start: '21:00', end: '00:00', mode: 'hold' }
+  ]
+};
+var currentPreset = 'offpeak';
+
+function setPreset(btn, preset) {
+  document.querySelectorAll('.preset-btn').forEach(function (b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  currentPreset = preset;
+  renderScheduleBlocks();
+  markDirty();
+}
+
+function renderScheduleBlocks() {
+  var blocks = PRESETS[currentPreset];
+  var el = document.getElementById('scheduleBlocks');
+  el.innerHTML = '';
+  blocks.forEach(function (b) {
+    var div = document.createElement('div');
+    div.className = 'sim-block';
+    div.innerHTML =
+      '<span class="sim-block-time">' + b.start + ' &ndash; ' + b.end + '</span>' +
+      '<span class="sim-block-mode ' + b.mode + '">' + b.mode + '</span>';
+    el.appendChild(div);
+  });
+}
+
+/* ---- Sites ---- */
+var SITES = [];
+(function () {
+  var raw = (window.FlexData && window.FlexData.sites) ? window.FlexData.sites : [];
+  raw.forEach(function (s) { if (s.name) SITES.push(s); });
+  if (!SITES.length) {
+    SITES = [
+      { id: 504, name: 'Ashhurst School',  primary_address: '96 Cambridge Avenue, Ashhurst', battery_capacity_kwh: 30, kwh_24h: 95 },
+      { id: 439, name: 'Wairakei Primary', primary_address: '2 Kauri Drive, Wairakei',       battery_capacity_kwh: 15, kwh_24h: 55 },
+      { id: 491, name: 'Keith Andrews',    primary_address: '131 Roscommon Road, Wiri',        battery_capacity_kwh: 50, kwh_24h: 220 }
+    ];
+  }
+})();
+var currentSiteId = SITES[0] ? SITES[0].id : 504;
+
+(function () {
+  var sel = document.getElementById('siteSelect');
+  SITES.forEach(function (s) {
+    var opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name + (s.primary_address ? ' — ' + s.primary_address : '');
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', function () {
+    currentSiteId = parseInt(this.value, 10);
+    var site = SITES.filter(function (s) { return s.id === currentSiteId; })[0];
+    if (site) document.getElementById('breadcrumbSite').textContent = site.name.toUpperCase();
+    resetResults();
+  });
+  if (SITES[0]) document.getElementById('breadcrumbSite').textContent = SITES[0].name.toUpperCase();
+})();
+
+/* ---- Period ---- */
+var currentPeriod = '6m';
+function setPeriod(btn, p) {
+  document.querySelectorAll('.period-tab').forEach(function (b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  currentPeriod = p;
+  resetResults();
+}
+
+/* ---- Dirty state (config changed, re-run needed) ---- */
+var isDirty = false;
+function markDirty() {
+  isDirty = true;
+}
+
+/* ---- State ---- */
+var deltaChartInst = null;
+var lastResult = null;
+
+function updateShiftLabel() {
+  document.getElementById('shiftLabel').textContent = document.getElementById('shiftSlider').value + ' kWh';
+}
+
+function resetResults() {
+  document.getElementById('resultsPlaceholder').style.display = 'flex';
+  document.getElementById('resultsLoading').style.display = 'none';
+  document.getElementById('resultsContent').style.display = 'none';
+  lastResult = null;
+  isDirty = true;
+}
+
+/* ---- Run simulation ---- */
+function runSimulation() {
+  var btn = document.getElementById('runBtn');
+  btn.textContent = 'Running…';
+  btn.classList.add('running');
+  btn.disabled = true;
+
+  document.getElementById('resultsPlaceholder').style.display = 'none';
+  document.getElementById('resultsLoading').style.display = 'flex';
+  document.getElementById('resultsContent').style.display = 'none';
+
+  /* Animate progress bar */
+  var bar = document.getElementById('loadingBar');
+  bar.style.width = '0%';
+  setTimeout(function () { bar.style.width = '85%'; }, 50);
+
+  setTimeout(function () {
+    bar.style.width = '100%';
+    setTimeout(function () {
+      computeAndShow();
+      btn.textContent = 'Re-run simulation';
+      btn.classList.remove('running');
+      btn.disabled = false;
+      isDirty = false;
+    }, 300);
+  }, 1800);
+}
+
+/* ---- Compute results ---- */
+function computeAndShow() {
+  var site    = SITES.filter(function (s) { return s.id === currentSiteId; })[0] || SITES[0];
+  var rand    = seeded(currentSiteId * 41 + 7);
+  var months  = currentPeriod === '3m' ? 3 : currentPeriod === '12m' ? 12 : 6;
+
+  /* Baseline cost parameters */
+  var dailyKwh     = site.kwh_24h || (80 + rand() * 120);
+  var batteryKwh   = site.battery_capacity_kwh || (15 + rand() * 40);
+  var flatRate     = 0.28 + rand() * 0.05;
+  var ssActual     = 0.52 + rand() * 0.14;  /* current self-sufficiency */
+  var totalImportActual = Math.round(dailyKwh * 30 * months * (1 - ssActual) / 1000 * 10) / 10; /* MWh */
+
+  /* Cost actual */
+  var costActual = Math.round(totalImportActual * 1000 * flatRate);
+
+  /* Simulated improvements based on strategy */
+  var tariff = document.getElementById('tariffSelect').value;
+  var shiftKwh = parseInt(document.getElementById('shiftSlider').value, 10);
+
+  var ssGain = 0;
+  var rateImprovement = 1.0;
+
+  if (currentPreset === 'offpeak') ssGain = 0.08 + rand() * 0.05;
+  else if (currentPreset === 'solar') ssGain = 0.06 + rand() * 0.06;
+  else if (currentPreset === 'peakshave') ssGain = 0.04 + rand() * 0.05;
+  else ssGain = 0.05 + rand() * 0.07;
+
+  ssGain += shiftKwh / dailyKwh * 0.4;
+
+  var ssSim = Math.min(ssActual + ssGain, 0.97);
+  var totalImportSim = Math.round(totalImportActual * (1 - ssActual) / (1 - ssSim) * (1 - ssSim) * 10) / 10;
+  totalImportSim = Math.max(0.1, Math.round((totalImportActual * (1 - ssGain / (1 - ssActual))) * 10) / 10);
+
+  if (tariff === 'tou') rateImprovement = 0.78 + rand() * 0.06; /* ToU typically saves 20-28% vs flat */
+  else if (tariff === 'demand') rateImprovement = 0.84 + rand() * 0.06;
+  else rateImprovement = 0.97;
+
+  var costSim = Math.round(costActual * (totalImportSim / totalImportActual) * rateImprovement);
+  var costSaving = costActual - costSim;
+
+  /* Monthly deltas */
+  var MONTH_NAMES = ['Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'];
+  var monthlyDeltas = [], monthLabels = [];
+  for (var i = 0; i < months; i++) {
+    var mIdx = (11 - months + 1 + i) % 12;
+    var delta = Math.round(costSaving / months * (0.8 + rand() * 0.4));
+    monthlyDeltas.push(delta);
+    monthLabels.push(MONTH_NAMES[mIdx]);
+  }
+
+  lastResult = {
+    months: months,
+    costActual: costActual,
+    costSim: costSim,
+    costSaving: costSaving,
+    ssActual: Math.round(ssActual * 100),
+    ssSim: Math.round(ssSim * 100),
+    totalImportActual: totalImportActual,
+    totalImportSim: totalImportSim,
+    monthlyDeltas: monthlyDeltas,
+    monthLabels: monthLabels,
+    flatRate: flatRate
+  };
+
+  renderResults();
+}
+
+function renderResults() {
+  var r = lastResult;
+  var months = r.months;
+  var annualisedSaving = Math.round(r.costSaving / months * 12);
+  var importDelta = Math.round((r.totalImportActual - r.totalImportSim) * 10) / 10;
+
+  /* Strategy label */
+  var presetLabels = { offpeak: 'Off-peak charge', solar: 'Solar self-use', peakshave: 'Peak shaving', custom: 'Custom' };
+  var tariffEl = document.getElementById('tariffSelect');
+  var tariffLabel = tariffEl.options[tariffEl.selectedIndex].text.split(' —')[0];
+  document.getElementById('strategyName').textContent = presetLabels[currentPreset] + ' + ' + tariffLabel;
+
+  /* Annualised banner */
+  document.getElementById('annValue').textContent = '$' + annualisedSaving.toLocaleString() + ' / year';
+  document.getElementById('annSub').textContent    = 'Estimated annual saving if this strategy were applied for 12 months. Indicative — not a financial guarantee.';
+  document.getElementById('periodLabel').textContent = months + '-month period';
+
+  /* Cost tiles */
+  document.getElementById('costActual').innerHTML    = '$' + r.costActual.toLocaleString();
+  document.getElementById('costActualSub').textContent = 'over ' + months + ' months';
+  document.getElementById('costSim').innerHTML       = '$' + r.costSim.toLocaleString();
+  document.getElementById('costSimSub').textContent  = 'over ' + months + ' months';
+  document.getElementById('costDelta').textContent   = '− $' + r.costSaving.toLocaleString() + ' saved vs. actual';
+
+  /* Self-sufficiency */
+  document.getElementById('ssActual').innerHTML = r.ssActual + '<span class="unit">%</span>';
+  document.getElementById('ssSim').innerHTML    = r.ssSim + '<span class="unit">%</span>';
+  var ssDiff = r.ssSim - r.ssActual;
+  var ssDeltaEl = document.getElementById('ssDelta');
+  ssDeltaEl.textContent = '+' + ssDiff + '% improvement';
+  ssDeltaEl.className = 'compare-tile-delta save';
+
+  /* Import */
+  document.getElementById('importActual').innerHTML = r.totalImportActual + '<span class="unit"> MWh</span>';
+  document.getElementById('importSim').innerHTML    = r.totalImportSim + '<span class="unit"> MWh</span>';
+  var importDeltaEl = document.getElementById('importDelta');
+  importDeltaEl.textContent = '− ' + importDelta + ' MWh reduced grid draw';
+  importDeltaEl.className = 'compare-tile-delta save';
+
+  /* Monthly delta chart */
+  if (deltaChartInst) deltaChartInst.destroy();
+  var ctx = document.getElementById('deltaChart').getContext('2d');
+  deltaChartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: r.monthLabels,
+      datasets: [{
+        label: 'Monthly saving ($)',
+        data: r.monthlyDeltas,
+        backgroundColor: r.monthlyDeltas.map(function (d) { return d >= 0 ? 'rgba(42,138,78,0.65)' : 'rgba(236,95,48,0.55)'; }),
+        borderRadius: 2, barPercentage: 0.65
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function (c) { return '$' + c.raw; } } }
+      },
+      scales: {
+        x: { grid: { color: gridColour() }, ticks: { color: textColour(), font: { size: 10 } } },
+        y: {
+          grid: { color: gridColour() },
+          ticks: { color: textColour(), font: { size: 10 }, callback: function (v) { return '$' + v; } }
+        }
+      }
+    }
+  });
+
+  /* Sensitivity defaults */
+  document.getElementById('sensPriceVal').textContent   = '28 c/kWh';
+  document.getElementById('sensOffpeakVal').textContent = '18 c/kWh';
+  document.getElementById('sensDemandVal').textContent  = 'Baseline';
+  document.getElementById('sensitivityResult').textContent = '$' + annualisedSaving.toLocaleString() + ' / year';
+
+  /* Show results */
+  document.getElementById('resultsLoading').style.display = 'none';
+  document.getElementById('resultsContent').style.display = 'flex';
+}
+
+/* ---- Sensitivity live update ---- */
+function updateSensitivity() {
+  if (!lastResult) return;
+  var price   = parseInt(document.getElementById('sensPrice').value, 10);
+  var offpeak = parseInt(document.getElementById('sensOffpeak').value, 10);
+  var demand  = parseInt(document.getElementById('sensDemand').value, 10);
+
+  document.getElementById('sensPriceVal').textContent   = price + ' c/kWh';
+  document.getElementById('sensOffpeakVal').textContent = offpeak + ' c/kWh';
+  document.getElementById('sensDemandVal').textContent  = demand === 0 ? 'Baseline' : (demand > 0 ? '+' + demand + '%' : demand + '%');
+
+  var tariff = document.getElementById('tariffSelect').value;
+  var demandMulti = 1 + demand / 100;
+  var rateRatio = tariff === 'flat' ? price / 28 : (price * 0.6 + offpeak * 0.4) / 28;
+  var annBase = Math.round(lastResult.costSaving / lastResult.months * 12);
+  var adjSaving = Math.round(annBase * rateRatio * demandMulti);
+  document.getElementById('sensitivityResult').textContent = '$' + adjSaving.toLocaleString() + ' / year';
+}
+
+/* ---- Export modal ---- */
+function openExportModal() {
+  if (!lastResult) return;
+  var annualisedSaving = Math.round(lastResult.costSaving / lastResult.months * 12);
+  FlexModal.open({
+    eyebrow: 'Flex:Simulator',
+    title: 'Export simulation results',
+    html:
+      '<p style="font-size:13px;color:var(--charcoal);margin-bottom:16px;">This summary is suitable for use in an internal review or customer presentation.</p>' +
+      '<div style="background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:14px 18px;margin-bottom:18px;">' +
+        '<div style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Simulation summary</div>' +
+        '<div style="font-size:14px;font-weight:800;color:var(--charcoal);margin-bottom:4px;">' + document.getElementById('strategyName').textContent + '</div>' +
+        '<div style="font-size:13px;color:var(--charcoal);">Annualised saving estimate: <strong>$' + annualisedSaving.toLocaleString() + '</strong></div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:4px;">Based on ' + lastResult.months + '-month backtest. Indicative — not a financial guarantee.</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;">' +
+        '<button onclick="FlexModal.close()" style="flex:1;padding:10px;border:1px solid var(--line-strong);border-radius:3px;background:var(--white);font-family:inherit;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);cursor:pointer;">Cancel</button>' +
+        '<button onclick="FlexModal.close()" style="flex:2;padding:10px;background:var(--charcoal);color:var(--egg);border:none;border-radius:3px;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;">Download PDF (prototype)</button>' +
+      '</div>'
+  });
+}
+
+/* ---- Theme + sidebar ---- */
+document.getElementById('themeToggle').addEventListener('click', function () {
+  DARK = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (lastResult && document.getElementById('resultsContent').style.display !== 'none') {
+    renderResults();
+  }
+});
+
+(function () {
+  var menuBtn  = document.getElementById('menuBtn');
+  var sidebar  = document.getElementById('sidebar');
+  var backdrop = document.getElementById('sidebarBackdrop');
+  var closeBtn = document.getElementById('sidebarClose');
+  function openSidebar()  { sidebar.classList.add('is-open'); backdrop.classList.add('is-visible'); }
+  function closeSidebar() { sidebar.classList.remove('is-open'); backdrop.classList.remove('is-visible'); }
+  menuBtn.addEventListener('click', openSidebar);
+  closeBtn.addEventListener('click', closeSidebar);
+  backdrop.addEventListener('click', closeSidebar);
+})();
+
+(function () {
+  var page = document.body.getAttribute('data-page');
+  document.querySelectorAll('[data-nav]').forEach(function (el) {
+    if (el.getAttribute('data-nav') === page) el.classList.add('is-active');
+  });
+})();
+
+/* ---- Boot ---- */
+renderScheduleBlocks();
+</script>
+</body>
+</html>

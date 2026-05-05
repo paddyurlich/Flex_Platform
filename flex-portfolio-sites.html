@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<!--
+  Flex Platform — page template
+  -----------------------------
+  How to start a new feature page:
+    1. Copy this file → flex-<feature>.html
+    2. Update <title>, the breadcrumb text, and `data-nav` on <body>
+       (data-nav must match the [data-nav] attribute on the corresponding
+       sidebar nav item, e.g. "portfolio", "data-export", "tariff" etc.)
+    3. Replace the contents of <main class="page"> with your feature UI
+    4. Drop in any feature-specific <script> after flex-platform.js
+
+  Shared assets live in /assets/. Reference them with relative paths.
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Portfolio - Sites &mdash; Blackcurrent</title>
+
+  <!-- Pre-paint theme application: must run before stylesheet to avoid flash. -->
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+</head>
+
+  <style>
+    /* ===== Portfolio — Sites: page-specific styles ===== */
+
+    /* Summary strip */
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .summary-chip {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .summary-chip .sc-val {
+      font-size: 22px; font-weight: 800; color: var(--charcoal);
+      font-family: var(--mono); font-variant-numeric: tabular-nums; line-height: 1;
+    }
+    .summary-chip .sc-label { font-size: 11px; color: var(--steel); text-transform: uppercase; letter-spacing: 0.07em; }
+    [data-theme="dark"] .summary-chip { background: #201d19; border-color: #2e2a25; }
+    [data-theme="dark"] .summary-chip .sc-val { color: var(--egg); }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .filter-bar .input { flex: 1; min-width: 180px; }
+    .site-count { font-size: 12px; color: var(--steel); margin-left: auto; white-space: nowrap; }
+
+    /* Card grid */
+    .sites-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 1100px) { .sites-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 680px)  { .sites-grid { grid-template-columns: 1fr; } }
+
+    /* Site card */
+    .site-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      display: flex; flex-direction: column;
+      transition: box-shadow 0.12s, border-color 0.12s;
+      animation: card-in 0.22s ease-out both;
+      cursor: pointer;
+    }
+    .site-card:hover {
+      box-shadow: 0 2px 12px rgba(34,32,29,0.10);
+      border-color: var(--steel);
+    }
+    .site-card.is-pending { opacity: 0.72; }
+    [data-theme="dark"] .site-card { background: #201d19; border-color: #2e2a25; }
+    [data-theme="dark"] .site-card:hover { border-color: #4a4540; }
+
+    /* Card header */
+    .sc-header {
+      padding: 14px 14px 0;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .sc-icon {
+      flex-shrink: 0; margin-top: 1px;
+      color: var(--steel);
+    }
+    .sc-title-block { flex: 1; min-width: 0; }
+    .sc-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .sc-name {
+      font-size: 14px; font-weight: 800; color: var(--charcoal);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    [data-theme="dark"] .sc-name { color: var(--egg); }
+    .sc-id-badge {
+      font-size: 10px; font-weight: 700;
+      background: var(--charcoal); color: var(--egg);
+      padding: 1px 7px; border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+    [data-theme="dark"] .sc-id-badge { background: #3a3530; color: var(--egg); }
+    .sc-customer {
+      font-size: 11px; color: var(--steel); margin-top: 1px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sc-arrow {
+      flex-shrink: 0; margin-top: -1px;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--line); border-radius: 50%;
+      color: var(--steel);
+      transition: background 0.1s, color 0.1s;
+      text-decoration: none;
+    }
+    .sc-arrow:hover { background: var(--rust); border-color: var(--rust); color: #fff; }
+
+    /* Address */
+    .sc-address {
+      padding: 6px 14px 0;
+      font-size: 12px; color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* Tags row */
+    .sc-tags {
+      padding: 8px 14px 0;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+
+    /* Stats row */
+    .sc-stats {
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      border-top: 1px solid var(--line);
+      margin-top: 10px;
+    }
+    [data-theme="dark"] .sc-stats { border-top-color: #2e2a25; }
+    .stat-cell { display: flex; flex-direction: column; gap: 3px; }
+    .stat-cell .stat-label {
+      font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--steel);
+    }
+    .stat-cell .stat-val {
+      font-size: 15px; font-weight: 800; color: var(--charcoal); line-height: 1;
+      font-family: var(--mono); font-variant-numeric: tabular-nums;
+    }
+    [data-theme="dark"] .stat-cell .stat-val { color: var(--egg); }
+    .stat-cell .stat-unit { font-size: 10px; font-weight: 500; color: var(--muted); margin-left: 1px; }
+    .stat-cell .stat-sub { font-size: 10px; color: var(--muted); }
+    .stat-cell.is-empty .stat-val { color: var(--steel); font-weight: 400; }
+
+    /* Battery SoC bar */
+    .soc-bar-wrap {
+      margin-top: 4px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .soc-bar-track {
+      flex: 1; height: 4px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden;
+    }
+    [data-theme="dark"] .soc-bar-track { background: rgba(255,255,255,0.12); }
+    .soc-bar-fill { height: 100%; background: #7040b8; border-radius: 2px; }
+    .soc-pct { font-size: 10px; color: var(--muted); white-space: nowrap; }
+
+    /* Card footer */
+    .sc-footer {
+      padding: 8px 14px;
+      border-top: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    [data-theme="dark"] .sc-footer { border-top-color: #2e2a25; }
+    .sc-live {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--muted);
+    }
+    .sc-live-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot-ok      { background: #22c55e; }
+    .dot-warn    { background: #f59e0b; }
+    .dot-fault   { background: #ef4444; }
+    .dot-pending { background: var(--steel); }
+    .sc-sector {
+      font-size: 10px; color: var(--steel);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    /* No results */
+    .no-results {
+      grid-column: 1 / -1;
+      text-align: center; padding: 48px 24px;
+      color: var(--steel); font-size: 13px;
+    }
+  </style>
+</head>
+
+<body data-page="portfolio-sites">
+
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <!-- Logo: kept inline so dark mode can recolor via CSS. -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio - Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="#">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">ENERGY / <strong>PORTFOLIO - SITES</strong></div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/>
+              <line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/>
+              <line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/>
+              <line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/>
+            </svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <!-- ============== PAGE CONTENT START ============== -->
+      <main class="page">
+
+        <header class="page-head">
+          <h1>Portfolio — Sites</h1>
+          <p class="page-sub">All sites at a glance — assets, performance, and telemetry status.</p>
+        </header>
+
+        <!-- Summary strip -->
+        <div class="summary-strip" id="summaryStrip">
+          <div class="summary-chip"><div class="sc-val">—</div><div class="sc-label">Total Sites</div></div>
+          <div class="summary-chip"><div class="sc-val">—</div><div class="sc-label">Live</div></div>
+          <div class="summary-chip"><div class="sc-val">—</div><div class="sc-label">Warnings / Faults</div></div>
+          <div class="summary-chip"><div class="sc-val">—</div><div class="sc-label">Pending</div></div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+          <input id="siteSearch" class="input" type="search" placeholder="Search sites, customers, addresses…" />
+          <select id="customerFilter" class="select" style="width: auto;">
+            <option value="">All customers</option>
+          </select>
+          <select id="statusFilter" class="select" style="width: auto;">
+            <option value="">All statuses</option>
+            <option value="ok">Live</option>
+            <option value="warn">Stale</option>
+            <option value="fault">Fault</option>
+            <option value="pending">Pending</option>
+          </select>
+          <span class="site-count" id="siteCount"></span>
+        </div>
+
+        <!-- Site cards -->
+        <div class="sites-grid" id="sitesGrid">
+          <div class="no-results">Loading sites…</div>
+        </div>
+
+      </main>
+      <!-- ============== PAGE CONTENT END ============== -->
+
+      <div class="footer-lockup">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <div class="meta-text">Flex Platform &nbsp;&middot;&nbsp; Prototype</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="data/sites_and_customers.js"></script>
+<script src="assets/flex-platform.js"></script>
+<script>
+(function () {
+  var U = window.FlexUtil;
+  var data = window.FlexData;
+
+  if (!data || !Array.isArray(data.sites)) {
+    document.getElementById('sitesGrid').innerHTML = '<div class="no-results">Could not load site data — check that /data/sites_and_customers.js is present.</div>';
+    return;
+  }
+
+  var STATUS_LABEL = { ok: 'Live', warn: 'Stale', fault: 'Fault', pending: 'Pending' };
+  var STATUS_DOT   = { ok: 'dot-ok', warn: 'dot-warn', fault: 'dot-fault', pending: 'dot-pending' };
+
+  /* Synthesise SoC for prototype — deterministic per site */
+  function syntheticSoC(site) {
+    return Math.round((site.id * 37 + 13) % 81 + 15);
+  }
+
+  /* Self-consumption from telemetry.power_hourly */
+  function calcSelfCon(site) {
+    if (!site.pv_size_kwp || !site.telemetry || !site.telemetry.power_hourly) return null;
+    var hours = site.telemetry.power_hourly;
+    var totalGen = 0, totalExport = 0;
+    hours.forEach(function (h) {
+      totalGen    += (h.generation_kW || 0);
+      totalExport += (h.export_kW     || 0);
+    });
+    if (totalGen === 0) return null;
+    return Math.min(100, Math.round((totalGen - totalExport) / totalGen * 100));
+  }
+
+  /* Last-reading recency string */
+  function recencyText(site) {
+    if (!site.last_reading) return 'No data';
+    return 'updated ' + site.last_reading;
+  }
+
+  /* SVG house icon */
+  var HOUSE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>';
+
+  /* Arrow icon */
+  var ARROW_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+
+  /* Render a single site card */
+  function renderCard(site) {
+    var pending = site.status === 'pending';
+    var selfCon = pending ? null : calcSelfCon(site);
+    var soc     = (site.has_battery && !pending) ? syntheticSoC(site) : null;
+
+    /* Tags */
+    var tags = '<span class="flag ' + site.status + '">' + STATUS_LABEL[site.status] + '</span>';
+    if (site.active_flex && site.active_flex !== '—') {
+      tags += ' <span class="flag ok">' + U.escapeHtml(site.active_flex) + '</span>';
+    }
+
+    /* PV stat */
+    var pvCell = site.pv_size_kwp > 0
+      ? '<div class="stat-cell"><div class="stat-label">PV</div>'
+        + '<div class="stat-val">' + site.pv_size_kwp + '<span class="stat-unit">kWp</span></div></div>'
+      : '<div class="stat-cell is-empty"><div class="stat-label">PV</div><div class="stat-val">—</div></div>';
+
+    /* Battery stat */
+    var batCell;
+    if (site.has_battery && site.battery_capacity_kwh > 0) {
+      var socBar = soc !== null
+        ? '<div class="soc-bar-wrap">'
+          + '<div class="soc-bar-track"><div class="soc-bar-fill" style="width:' + soc + '%"></div></div>'
+          + '<span class="soc-pct">' + soc + '%</span>'
+          + '</div>'
+        : '';
+      batCell = '<div class="stat-cell"><div class="stat-label">Battery</div>'
+        + '<div class="stat-val">' + site.battery_capacity_kwh + '<span class="stat-unit">kWh</span></div>'
+        + socBar + '</div>';
+    } else {
+      batCell = '<div class="stat-cell is-empty"><div class="stat-label">Battery</div><div class="stat-val">—</div></div>';
+    }
+
+    /* Self-consumption */
+    var scCell = selfCon !== null
+      ? '<div class="stat-cell"><div class="stat-label">Self-Con</div>'
+        + '<div class="stat-val">' + selfCon + '<span class="stat-unit">%</span></div></div>'
+      : '<div class="stat-cell is-empty"><div class="stat-label">Self-Con</div><div class="stat-val">—</div></div>';
+
+    /* Usage */
+    var usageCell = (!pending && site.kwh_24h)
+      ? '<div class="stat-cell"><div class="stat-label">Usage</div>'
+        + '<div class="stat-val">' + U.fmtNum(Math.round(site.kwh_24h)) + '<span class="stat-unit">kWh</span></div>'
+        + '<div class="stat-sub">24h</div></div>'
+      : '<div class="stat-cell is-empty"><div class="stat-label">Usage</div><div class="stat-val">—</div></div>';
+
+    return '<div class="site-card' + (pending ? ' is-pending' : '') + '" data-site-id="' + site.id + '">'
+
+      /* Header */
+      + '<div class="sc-header">'
+      +   '<div class="sc-icon">' + HOUSE_SVG + '</div>'
+      +   '<div class="sc-title-block">'
+      +     '<div class="sc-name-row">'
+      +       '<span class="sc-name">' + U.escapeHtml(site.name) + '</span>'
+      +       '<span class="sc-id-badge">' + site.id + '</span>'
+      +     '</div>'
+      +     '<div class="sc-customer">' + U.escapeHtml(site.customer_name) + '</div>'
+      +   '</div>'
+      +   '<a class="sc-arrow" href="flex-energy-dashboard.html" title="Open Energy Dashboard">' + ARROW_SVG + '</a>'
+      + '</div>'
+
+      /* Address */
+      + '<div class="sc-address">' + U.escapeHtml(site.address || '—') + '</div>'
+
+      /* Tags */
+      + '<div class="sc-tags">' + tags + '</div>'
+
+      /* Stats */
+      + '<div class="sc-stats">'
+      +   pvCell + batCell + scCell + usageCell
+      + '</div>'
+
+      /* Footer */
+      + '<div class="sc-footer">'
+      +   '<div class="sc-live">'
+      +     '<span class="sc-live-dot ' + STATUS_DOT[site.status] + '"></span>'
+      +     STATUS_LABEL[site.status] + ' &middot; ' + recencyText(site)
+      +   '</div>'
+      +   '<span class="sc-sector">' + U.escapeHtml(site.sector || '') + '</span>'
+      + '</div>'
+
+      + '</div>';
+  }
+
+  /* Summary strip */
+  function renderSummary(sites) {
+    var byStatus = {};
+    sites.forEach(function (s) { byStatus[s.status] = (byStatus[s.status] || 0) + 1; });
+    var live    = (byStatus.ok    || 0);
+    var issues  = (byStatus.warn  || 0) + (byStatus.fault || 0);
+    var pending = (byStatus.pending || 0);
+    var chips = document.getElementById('summaryStrip').children;
+    chips[0].querySelector('.sc-val').textContent = data.sites.length;
+    chips[1].querySelector('.sc-val').textContent = live;
+    chips[2].querySelector('.sc-val').textContent = issues;
+    chips[3].querySelector('.sc-val').textContent = pending;
+  }
+
+  /* Populate customer filter */
+  function populateCustomerFilter() {
+    var names = Array.from(new Set(data.sites.map(function (s) { return s.customer_name; }).filter(Boolean))).sort();
+    var sel = document.getElementById('customerFilter');
+    names.forEach(function (n) {
+      var o = document.createElement('option');
+      o.value = n; o.textContent = n;
+      sel.appendChild(o);
+    });
+  }
+
+  /* Main render */
+  function renderCards() {
+    var search   = (document.getElementById('siteSearch').value   || '').toLowerCase().trim();
+    var custF    = document.getElementById('customerFilter').value;
+    var statusF  = document.getElementById('statusFilter').value;
+
+    var filtered = data.sites.filter(function (s) {
+      if (custF   && s.customer_name !== custF)   return false;
+      if (statusF && s.status        !== statusF)  return false;
+      if (search) {
+        var hay = (s.name + ' ' + s.customer_name + ' ' + (s.address || '')).toLowerCase();
+        if (hay.indexOf(search) === -1) return false;
+      }
+      return true;
+    });
+
+    /* Pending last, then by 24h kWh desc */
+    filtered.sort(function (a, b) {
+      var ap = a.status === 'pending' ? 1 : 0, bp = b.status === 'pending' ? 1 : 0;
+      if (ap !== bp) return ap - bp;
+      return (b.kwh_24h || 0) - (a.kwh_24h || 0);
+    });
+
+    document.getElementById('siteCount').textContent =
+      filtered.length + (filtered.length === data.sites.length ? ' sites' : ' of ' + data.sites.length + ' sites');
+
+    var grid = document.getElementById('sitesGrid');
+    if (!filtered.length) {
+      grid.innerHTML = '<div class="no-results">No sites match these filters.</div>';
+      return;
+    }
+    grid.innerHTML = filtered.map(renderCard).join('');
+
+    renderSummary(filtered);
+  }
+
+  /* Init */
+  populateCustomerFilter();
+  renderSummary(data.sites);
+  renderCards();
+
+  document.getElementById('siteSearch').addEventListener('input', renderCards);
+  document.getElementById('customerFilter').addEventListener('change', renderCards);
+  document.getElementById('statusFilter').addEventListener('change', renderCards);
+
+})();
+</script>
+</body>
+</html>

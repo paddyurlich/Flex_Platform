@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flex:Control &mdash; Blackcurrent</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+
+  <style>
+    /* ---- Device grid ---- */
+    .device-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    /* ---- Device card ---- */
+    .device-card { margin-bottom: 0; display: flex; flex-direction: column; }
+    .device-card-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--line);
+      gap: 12px;
+    }
+    .device-card-head-left { flex: 1; min-width: 0; }
+    .device-type-tag {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--steel); margin-bottom: 3px;
+    }
+    .device-name {
+      font-size: 15px; font-weight: 800; letter-spacing: -0.01em;
+      color: var(--charcoal); line-height: 1.2;
+    }
+    .device-location { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+    .device-state-line {
+      font-size: 12px; color: var(--muted); font-weight: 500;
+      margin-top: 8px; line-height: 1.5;
+    }
+    .device-state-line strong { color: var(--charcoal); font-weight: 700; }
+
+    /* ---- Pending overlay on card ---- */
+    .device-card.pending { opacity: 0.7; pointer-events: none; }
+    .pending-bar {
+      display: none;
+      background: var(--rust); color: var(--charcoal);
+      font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      padding: 5px 20px; text-align: center;
+      animation: pulse-bar 0.8s ease-in-out infinite alternate;
+    }
+    .device-card.pending .pending-bar { display: block; }
+    @keyframes pulse-bar {
+      from { opacity: 0.7; }
+      to   { opacity: 1; }
+    }
+
+    /* ---- Controls body ---- */
+    .device-controls { padding: 16px 20px; flex: 1; }
+    .ctrl-group { margin-bottom: 14px; }
+    .ctrl-group:last-child { margin-bottom: 0; }
+    .ctrl-lbl {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 7px;
+    }
+
+    /* Button group (power, mode, etc.) */
+    .btn-grp { display: flex; gap: 4px; flex-wrap: wrap; }
+    .ctrl-btn {
+      flex: 1; min-width: 52px;
+      padding: 9px 10px;
+      border: 1px solid var(--line-strong); border-radius: 3px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      cursor: pointer; background: var(--white); color: var(--muted);
+      font-family: inherit; transition: background 0.1s, color 0.1s, border-color 0.1s;
+      text-align: center;
+    }
+    .ctrl-btn:hover:not(.is-active) { border-color: var(--charcoal); color: var(--charcoal); }
+
+    /* Active states per meaning */
+    .ctrl-btn.is-active               { border-color: var(--charcoal); }
+    .ctrl-btn.is-active.v-on          { background: var(--sapphire); border-color: var(--sapphire); color: var(--white); }
+    .ctrl-btn.is-active.v-off         { background: var(--charcoal); border-color: var(--charcoal); color: var(--egg); }
+    .ctrl-btn.is-active.v-heat        { background: var(--rust); border-color: var(--rust); color: var(--charcoal); }
+    .ctrl-btn.is-active.v-cool        { background: var(--sapphire); border-color: var(--sapphire); color: var(--white); }
+    .ctrl-btn.is-active.v-fan         { background: var(--steel); border-color: var(--steel); color: var(--white); }
+    .ctrl-btn.is-active.v-boost       { background: var(--rust); border-color: var(--rust); color: var(--charcoal); }
+    .ctrl-btn.is-active.v-scheduled   { background: var(--sapphire); border-color: var(--sapphire); color: var(--white); }
+    .ctrl-btn.is-active.v-start       { background: var(--sapphire); border-color: var(--sapphire); color: var(--white); }
+    .ctrl-btn.is-active.v-stop        { background: var(--charcoal); border-color: var(--charcoal); color: var(--egg); }
+
+    /* Setpoint stepper */
+    .stepper { display: flex; align-items: stretch; gap: 0; }
+    .stepper-btn {
+      width: 36px; height: 36px; flex-shrink: 0;
+      border: 1px solid var(--line-strong); background: var(--white); color: var(--charcoal);
+      font-size: 20px; font-weight: 400; line-height: 1; cursor: pointer;
+      font-family: inherit; display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s, color 0.1s;
+    }
+    .stepper-btn:first-child { border-radius: 3px 0 0 3px; }
+    .stepper-btn:last-child  { border-radius: 0 3px 3px 0; border-left: 0; }
+    .stepper-btn:hover { background: var(--charcoal); color: var(--egg); }
+    .stepper-val {
+      min-width: 64px; text-align: center;
+      border: 1px solid var(--line-strong); border-left: 0;
+      padding: 0 10px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; color: var(--charcoal); gap: 2px;
+    }
+    .stepper-unit { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    /* EV rate display */
+    .ev-rate { font-size: 24px; font-weight: 800; color: var(--sapphire); letter-spacing: -0.02em; }
+    .ev-rate .unit { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 2px; }
+    .ev-session { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 3px; }
+
+    /* Offline overlay */
+    .device-card.is-offline .device-controls {
+      opacity: 0.4; pointer-events: none;
+    }
+    .offline-notice {
+      display: none;
+      background: #e8e3d6; border-radius: 3px;
+      padding: 8px 12px; margin-bottom: 12px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--charcoal);
+    }
+    .device-card.is-offline .offline-notice { display: block; }
+
+    /* Audit outcome flags */
+    .flag.confirmed { background: rgba(85,151,209,.15); color: var(--sapphire); border: 1px solid rgba(85,151,209,.3); }
+    .flag.sending   { background: rgba(236,95,48,.12); color: var(--rust); border: 1px solid rgba(236,95,48,.3); animation: pulse-bar 0.8s ease-in-out infinite alternate; }
+    .flag.failed    { background: rgba(181,59,31,.15); color: #b53b1f; border: 1px solid rgba(181,59,31,.3); }
+
+    /* ---- Confirm modal body ---- */
+    .confirm-action-box {
+      background: var(--egg); border: 2px solid var(--charcoal);
+      border-radius: 3px; padding: 16px 20px; margin-bottom: 18px;
+    }
+    .confirm-action-box .action-label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .confirm-action-box .action-desc {
+      font-size: 16px; font-weight: 800; color: var(--charcoal); letter-spacing: -0.01em;
+    }
+    .confirm-notice {
+      font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 20px; line-height: 1.6;
+    }
+
+    /* ---- Dark mode ---- */
+    [data-theme="dark"] .device-name { color: #e8e3d6; }
+    [data-theme="dark"] .device-state-line strong { color: #e8e3d6; }
+    [data-theme="dark"] .device-card-head { border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .ctrl-btn { background: #2d2a26; color: var(--muted); border-color: #443f37; }
+    [data-theme="dark"] .ctrl-btn:hover:not(.is-active) { border-color: #e8e3d6; color: #e8e3d6; }
+    [data-theme="dark"] .ctrl-btn.is-active.v-off { background: #e8e3d6; border-color: #e8e3d6; color: #0a0907; }
+    [data-theme="dark"] .ctrl-btn.is-active.v-fan  { background: #6f6c66; border-color: #6f6c66; }
+    [data-theme="dark"] .stepper-btn { background: #2d2a26; color: #e8e3d6; border-color: #443f37; }
+    [data-theme="dark"] .stepper-btn:hover { background: #e8e3d6; color: #0a0907; }
+    [data-theme="dark"] .stepper-val { border-color: #443f37; color: #e8e3d6; }
+    [data-theme="dark"] .offline-notice { background: #2e2a25; color: #a39e92; }
+    [data-theme="dark"] .confirm-action-box { background: #1c1a17; border-color: #443f37; }
+    [data-theme="dark"] .confirm-action-box .action-desc { color: #e8e3d6; }
+    [data-theme="dark"] .flag.confirmed { background: rgba(107,168,223,.15); color: #6ba8df; }
+    [data-theme="dark"] .flag.failed    { background: rgba(210,74,42,.15); color: #d24a2a; }
+
+    /* ---- Mobile ---- */
+    @media (max-width: 820px) {
+      .device-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body data-page="control">
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio - Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="flex-simulator.html">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Help</div>
+        <a class="nav-item" data-nav="faq" href="flex-faq.html">FAQ</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">SITES / <strong>FOREST LODGE</strong> / CONTROL</div>
+        <div class="topbar-right">
+          <div class="site-selector"><span>Forest Lodge</span><span class="chev">&#9662;</span></div>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/><line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/></svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE CONTENT ============ -->
+      <main class="page">
+
+        <header class="page-head">
+          <div>
+            <h1>Flex:Control</h1>
+            <p class="page-sub">Take direct control of your site's flexible energy devices.</p>
+          </div>
+          <span class="module-tag">Operate</span>
+        </header>
+
+        <!-- Status tiles -->
+        <div class="coverage" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stat actual">
+            <div class="lbl">Devices Online</div>
+            <div class="val" id="tileOnline">—</div>
+            <div class="sub" id="tileOnlineSub"></div>
+          </div>
+          <div class="stat">
+            <div class="lbl">Pending Commands</div>
+            <div class="val" id="tilePending">0</div>
+            <div class="sub" id="tilePendingSub">all confirmed</div>
+          </div>
+          <div class="stat estimated">
+            <div class="lbl">Actions Today</div>
+            <div class="val" id="tileActions">—</div>
+            <div class="sub">via manual &amp; schedule</div>
+          </div>
+          <div class="stat rows">
+            <div class="lbl">Schedule</div>
+            <div class="val" style="font-size:15px;margin-top:4px;">Active</div>
+            <div class="sub"><a href="flex-schedule.html" style="color:var(--rust);font-weight:700;text-decoration:none;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">View schedule &rarr;</a></div>
+          </div>
+        </div>
+
+        <!-- Device cards -->
+        <div class="device-grid" id="deviceGrid"></div>
+
+        <!-- Audit trail -->
+        <div class="recent">
+          <div class="recent-head" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Control Audit Trail</span>
+            <span style="font-size:11px;font-weight:600;color:var(--steel);letter-spacing:0.06em;">Immutable — all actions logged</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp (NZT)</th>
+                <th>Device</th>
+                <th>Action</th>
+                <th>Triggered by</th>
+                <th>Outcome</th>
+              </tr>
+            </thead>
+            <tbody id="auditLog"></tbody>
+          </table>
+        </div>
+
+      </main>
+    </section>
+  </div>
+</div>
+
+<script src="assets/flex-platform.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---- Device state ----
+  var DEVICES = [
+    {
+      id: 'hp-main',
+      name: 'Heat Pump — Main Hall',
+      typeLabel: 'Heat Pump',
+      type: 'heatpump',
+      location: 'Main Hall',
+      brand: 'Mitsubishi Electric MSZ-GL',
+      status: 'online',
+      lastConfirmed: '2 min ago',
+      state: { power: 'on', mode: 'heat', setpoint: 21 }
+    },
+    {
+      id: 'hp-admin',
+      name: 'Heat Pump — Admin Block',
+      typeLabel: 'Heat Pump',
+      type: 'heatpump',
+      location: 'Admin Block',
+      brand: 'Daikin FTXM-N',
+      status: 'online',
+      lastConfirmed: '14 min ago',
+      state: { power: 'off', mode: 'heat', setpoint: 20 }
+    },
+    {
+      id: 'ev-bay1',
+      name: 'EV Charger — Bay 1',
+      typeLabel: 'EV Charger',
+      type: 'evcharger',
+      location: 'Carpark',
+      brand: 'Wallbox Pulsar Plus 7.4 kW',
+      status: 'online',
+      lastConfirmed: '1 min ago',
+      state: { charging: true, rate: 7.4, session: { kwh: 9.2, duration: '1h 14m' } }
+    },
+    {
+      id: 'hw-main',
+      name: 'Hot Water System',
+      typeLabel: 'Hot Water',
+      type: 'hotwater',
+      location: 'Plant Room',
+      brand: 'Rheem 250L Electric',
+      status: 'online',
+      lastConfirmed: '3 hrs ago',
+      state: { mode: 'scheduled' }
+    }
+  ];
+
+  var AUDIT = [
+    { ts: '2026-04-30 09:14', device: 'Heat Pump — Main Hall',    action: 'Power ON · Heat · 21°C',       by: 'Schedule',          outcome: 'confirmed' },
+    { ts: '2026-04-30 07:30', device: 'EV Charger — Bay 1',       action: 'Charging started · 7.4 kW',    by: 'P. Urlich',         outcome: 'confirmed' },
+    { ts: '2026-04-29 21:00', device: 'Heat Pump — Main Hall',    action: 'Power OFF',                     by: 'Schedule',          outcome: 'confirmed' },
+    { ts: '2026-04-29 18:30', device: 'Hot Water System',         action: 'Mode: Scheduled',               by: 'Blackcurrent Ops',  outcome: 'confirmed' },
+    { ts: '2026-04-29 17:00', device: 'Heat Pump — Admin Block',  action: 'Power ON · Cool · 22°C',       by: 'P. Urlich',         outcome: 'confirmed' },
+    { ts: '2026-04-29 09:14', device: 'Heat Pump — Main Hall',    action: 'Power ON · Heat · 21°C',       by: 'Schedule',          outcome: 'confirmed' },
+    { ts: '2026-04-28 21:00', device: 'Heat Pump — Main Hall',    action: 'Power OFF',                     by: 'Schedule',          outcome: 'confirmed' },
+    { ts: '2026-04-28 11:22', device: 'EV Charger — Bay 1',       action: 'Charge rate: 7.4 → 11.0 kW',  by: 'Blackcurrent Ops',  outcome: 'confirmed' }
+  ];
+
+  var pendingCount = 0;
+
+  // ---- Helpers ----
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function getNZTs() {
+    var now = new Date();
+    var dst = now.getUTCMonth() > 8 || now.getUTCMonth() < 3;
+    var nz = new Date(now.getTime() + (dst ? 13 : 12) * 3600000);
+    return nz.getUTCFullYear() + '-' + pad2(nz.getUTCMonth() + 1) + '-' + pad2(nz.getUTCDate())
+         + ' ' + pad2(nz.getUTCHours()) + ':' + pad2(nz.getUTCMinutes());
+  }
+
+  function deviceById(id) {
+    for (var i = 0; i < DEVICES.length; i++) if (DEVICES[i].id === id) return DEVICES[i];
+    return null;
+  }
+
+  function stateLine(d) {
+    if (d.type === 'heatpump') {
+      if (d.state.power === 'off') return 'Power <strong>Off</strong> &nbsp;·&nbsp; Setpoint <strong>' + d.state.setpoint + '°C</strong>';
+      return 'Power <strong>On</strong> &nbsp;·&nbsp; Mode <strong>' + cap(d.state.mode) + '</strong> &nbsp;·&nbsp; Setpoint <strong>' + d.state.setpoint + '°C</strong>';
+    }
+    if (d.type === 'evcharger') {
+      if (!d.state.charging) return 'Status <strong>Idle</strong>';
+      return 'Charging <strong>' + d.state.rate + ' kW</strong> &nbsp;·&nbsp; Session <strong>' + d.state.session.kwh + ' kWh</strong> &nbsp;·&nbsp; <strong>' + d.state.session.duration + '</strong>';
+    }
+    if (d.type === 'hotwater') {
+      return 'Mode <strong>' + cap(d.state.mode) + '</strong>';
+    }
+    return '';
+  }
+
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  function statusFlagHtml(s) {
+    var map = { online: 'ok', offline: 'fault', unknown: 'pending' };
+    var lbl = { online: 'Online', offline: 'Offline', unknown: 'Unknown' };
+    return '<span class="flag ' + (map[s] || 'pending') + '">' + (lbl[s] || s) + '</span>';
+  }
+
+  // ---- Render a single device card ----
+  function renderCard(d) {
+    var el = document.getElementById('card-' + d.id);
+
+    var statusHtml = statusFlagHtml(d.status);
+    var stateHtml  = stateLine(d);
+    var ctrlHtml   = controlsHtml(d);
+
+    var inner = ''
+      + '<div class="pending-bar">Sending command&hellip;</div>'
+      + '<div class="device-card-head">'
+      +   '<div class="device-card-head-left">'
+      +     '<div class="device-type-tag">' + d.typeLabel + '</div>'
+      +     '<div class="device-name">' + d.name + '</div>'
+      +     '<div class="device-location">' + d.location + ' &nbsp;&middot;&nbsp; ' + d.brand + '</div>'
+      +     '<div class="device-state-line">' + stateHtml + '</div>'
+      +   '</div>'
+      +   '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">'
+      +     statusHtml
+      +     '<span style="font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;">Confirmed ' + d.lastConfirmed + '</span>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="device-controls">'
+      +   (d.status === 'offline' ? '<div class="offline-notice">Device offline — commands unavailable</div>' : '')
+      +   ctrlHtml
+      + '</div>';
+
+    if (el) {
+      el.innerHTML = inner;
+      el.className = 'card device-card' + (d.status === 'offline' ? ' is-offline' : '');
+    } else {
+      var div = document.createElement('div');
+      div.id = 'card-' + d.id;
+      div.className = 'card device-card' + (d.status === 'offline' ? ' is-offline' : '');
+      div.innerHTML = inner;
+      document.getElementById('deviceGrid').appendChild(div);
+    }
+
+    attachControls(d);
+  }
+
+  // ---- Controls HTML per device type ----
+  function controlsHtml(d) {
+    if (d.type === 'heatpump') return heatpumpControls(d);
+    if (d.type === 'evcharger') return evControls(d);
+    if (d.type === 'hotwater')  return hotwaterControls(d);
+    return '';
+  }
+
+  function heatpumpControls(d) {
+    var pow = d.state.power;
+    var mode = d.state.mode;
+    var sp = d.state.setpoint;
+    return '<div class="ctrl-group">'
+        +   '<div class="ctrl-lbl">Power</div>'
+        +   '<div class="btn-grp">'
+        +     btn('On',  'power', 'on',  pow === 'on',  'v-on',  d.id)
+        +     btn('Off', 'power', 'off', pow === 'off', 'v-off', d.id)
+        +   '</div>'
+        + '</div>'
+        + '<div class="ctrl-group">'
+        +   '<div class="ctrl-lbl">Mode</div>'
+        +   '<div class="btn-grp">'
+        +     btn('Heat', 'mode', 'heat', mode === 'heat', 'v-heat', d.id)
+        +     btn('Cool', 'mode', 'cool', mode === 'cool', 'v-cool', d.id)
+        +     btn('Fan',  'mode', 'fan',  mode === 'fan',  'v-fan',  d.id)
+        +   '</div>'
+        + '</div>'
+        + '<div class="ctrl-group">'
+        +   '<div class="ctrl-lbl">Setpoint</div>'
+        +   '<div class="stepper">'
+        +     '<button class="stepper-btn" data-stepper="' + d.id + '" data-dir="-1">&minus;</button>'
+        +     '<div class="stepper-val" id="sp-' + d.id + '">' + sp + '<span class="stepper-unit">°C</span></div>'
+        +     '<button class="stepper-btn" data-stepper="' + d.id + '" data-dir="1">+</button>'
+        +   '</div>'
+        + '</div>';
+  }
+
+  function evControls(d) {
+    var rates = [3.7, 7.4, 11.0, 22.0];
+    var rateIdx = rates.indexOf(d.state.rate);
+    if (rateIdx < 0) rateIdx = 1;
+    return '<div class="ctrl-group">'
+        +   '<div class="ctrl-lbl">Charging</div>'
+        +   '<div class="btn-grp">'
+        +     btn('Start', 'charging', 'start', d.state.charging,  'v-start', d.id)
+        +     btn('Stop',  'charging', 'stop',  !d.state.charging, 'v-stop',  d.id)
+        +   '</div>'
+        + '</div>'
+        + '<div class="ctrl-group">'
+        +   '<div class="ctrl-lbl">Charge Rate</div>'
+        +   '<div class="stepper">'
+        +     '<button class="stepper-btn" data-rate="' + d.id + '" data-dir="-1">&minus;</button>'
+        +     '<div class="stepper-val" id="rate-' + d.id + '">' + d.state.rate.toFixed(1) + '<span class="stepper-unit">kW</span></div>'
+        +     '<button class="stepper-btn" data-rate="' + d.id + '" data-dir="1">+</button>'
+        +   '</div>'
+        +   '<div class="helper" style="margin-top:8px;">Max rate: <strong>22 kW</strong> &nbsp;·&nbsp; Supply limit: <strong>22 kW</strong></div>'
+        + '</div>'
+        + (d.state.charging ? '<div class="ctrl-group">'
+        +   '<div class="ctrl-lbl">Current Session</div>'
+        +   '<div style="font-size:13px;font-weight:500;color:var(--muted);">'
+        +     '<strong style="color:var(--sapphire);font-size:18px;font-weight:800;">' + d.state.session.kwh + '</strong> kWh delivered &nbsp;&middot;&nbsp; '
+        +     '<strong>' + d.state.session.duration + '</strong>'
+        +   '</div>'
+        + '</div>' : '');
+  }
+
+  function hotwaterControls(d) {
+    var m = d.state.mode;
+    return '<div class="ctrl-group">'
+        +   '<div class="ctrl-lbl">Mode</div>'
+        +   '<div class="btn-grp">'
+        +     btn('Boost',     'hwmode', 'boost',     m === 'boost',     'v-boost',     d.id)
+        +     btn('Scheduled', 'hwmode', 'scheduled', m === 'scheduled', 'v-scheduled', d.id)
+        +     btn('Off',       'hwmode', 'off',       m === 'off',       'v-off',       d.id)
+        +   '</div>'
+        +   '<div class="helper" style="margin-top:8px;">'
+        +     'Boost heats immediately. Scheduled follows the programme set in <a href="flex-schedule.html" style="color:var(--rust);font-weight:700;">Flex:Schedule</a>.'
+        +   '</div>'
+        + '</div>';
+  }
+
+  function btn(label, ctrl, value, active, variant, deviceId) {
+    return '<button class="ctrl-btn' + (active ? ' is-active ' + variant : '') + '"'
+         + ' data-ctrl="' + ctrl + '" data-value="' + value + '" data-device="' + deviceId + '">'
+         + label + '</button>';
+  }
+
+  // ---- Attach control event listeners ----
+  function attachControls(d) {
+    var card = document.getElementById('card-' + d.id);
+    if (!card) return;
+
+    // Mode / power / hw buttons
+    card.querySelectorAll('.ctrl-btn[data-ctrl]').forEach(function(b) {
+      b.addEventListener('click', function() {
+        var ctrl  = b.dataset.ctrl;
+        var value = b.dataset.value;
+        var devId = b.dataset.device;
+        var dev   = deviceById(devId);
+        if (!dev) return;
+
+        var actionLabel = buildActionLabel(dev, ctrl, value);
+        confirmAction(dev, actionLabel, function() {
+          applyControl(dev, ctrl, value);
+          logAction(dev.name, actionLabel, 'P. Urlich', 'confirmed');
+          renderCard(dev);
+          updateTiles();
+        });
+      });
+    });
+
+    // Setpoint steppers (heat pump)
+    card.querySelectorAll('.stepper-btn[data-stepper]').forEach(function(b) {
+      b.addEventListener('click', function() {
+        var devId = b.dataset.stepper;
+        var dev   = deviceById(devId);
+        var dir   = parseInt(b.dataset.dir, 10);
+        if (!dev) return;
+        var newSp = Math.min(30, Math.max(16, dev.state.setpoint + dir));
+        if (newSp === dev.state.setpoint) return;
+        var actionLabel = 'Setpoint ' + dev.state.setpoint + '°C → ' + newSp + '°C';
+        confirmAction(dev, actionLabel, function() {
+          dev.state.setpoint = newSp;
+          dev.lastConfirmed = 'just now';
+          logAction(dev.name, actionLabel, 'P. Urlich', 'confirmed');
+          renderCard(dev);
+          updateTiles();
+        });
+      });
+    });
+
+    // EV charge rate steppers
+    var evRates = [3.7, 7.4, 11.0, 22.0];
+    card.querySelectorAll('.stepper-btn[data-rate]').forEach(function(b) {
+      b.addEventListener('click', function() {
+        var devId = b.dataset.rate;
+        var dev   = deviceById(devId);
+        var dir   = parseInt(b.dataset.dir, 10);
+        if (!dev) return;
+        var idx = evRates.indexOf(dev.state.rate);
+        if (idx < 0) idx = 1;
+        var newIdx = Math.min(evRates.length - 1, Math.max(0, idx + dir));
+        if (newIdx === idx) return;
+        var newRate = evRates[newIdx];
+        var actionLabel = 'Charge rate ' + dev.state.rate.toFixed(1) + ' → ' + newRate.toFixed(1) + ' kW';
+        confirmAction(dev, actionLabel, function() {
+          dev.state.rate = newRate;
+          dev.lastConfirmed = 'just now';
+          logAction(dev.name, actionLabel, 'P. Urlich', 'confirmed');
+          renderCard(dev);
+          updateTiles();
+        });
+      });
+    });
+  }
+
+  function buildActionLabel(dev, ctrl, value) {
+    if (dev.type === 'heatpump') {
+      if (ctrl === 'power') return 'Power ' + cap(value);
+      if (ctrl === 'mode')  return 'Mode: ' + cap(value);
+    }
+    if (dev.type === 'evcharger') {
+      if (ctrl === 'charging') return value === 'start' ? 'Charging start' : 'Charging stop';
+    }
+    if (dev.type === 'hotwater') {
+      return 'Mode: ' + cap(value);
+    }
+    return value;
+  }
+
+  function applyControl(dev, ctrl, value) {
+    if (dev.type === 'heatpump') {
+      if (ctrl === 'power') dev.state.power = value;
+      if (ctrl === 'mode')  dev.state.mode  = value;
+    }
+    if (dev.type === 'evcharger') {
+      dev.state.charging = (value === 'start');
+    }
+    if (dev.type === 'hotwater') {
+      dev.state.mode = value;
+    }
+    dev.lastConfirmed = 'just now';
+  }
+
+  // ---- Confirmation modal ----
+  function confirmAction(dev, actionLabel, onConfirm) {
+    FlexModal.open({
+      eyebrow: dev.typeLabel + ' — ' + dev.location,
+      title: 'Confirm Action',
+      html: '<div class="confirm-action-box">'
+          +   '<div class="action-label">Command to send</div>'
+          +   '<div class="action-desc">' + dev.name + ' &mdash; ' + actionLabel + '</div>'
+          + '</div>'
+          + '<p class="confirm-notice">This action will be sent immediately via the Edge device and logged in the audit trail. It cannot be undone from this screen — send a new command to reverse it.</p>'
+          + '<div class="actions" style="margin-top:0;">'
+          +   '<button class="btn" id="confirmCancel">Cancel</button>'
+          +   '<button class="btn primary" id="confirmOk">Send Command</button>'
+          + '</div>'
+    });
+
+    document.getElementById('confirmCancel').addEventListener('click', function() {
+      FlexModal.close();
+    });
+    document.getElementById('confirmOk').addEventListener('click', function() {
+      FlexModal.close();
+      // Show pending state
+      var card = document.getElementById('card-' + dev.id);
+      if (card) card.classList.add('pending');
+      pendingCount++;
+      updateTiles();
+      // Simulate round-trip confirmation (~1.5s)
+      setTimeout(function() {
+        if (card) card.classList.remove('pending');
+        pendingCount = Math.max(0, pendingCount - 1);
+        onConfirm();
+      }, 1500);
+    });
+  }
+
+  // ---- Audit log ----
+  function logAction(deviceName, action, by, outcome) {
+    AUDIT.unshift({ ts: getNZTs(), device: deviceName, action: action, by: by, outcome: outcome });
+    renderAudit();
+  }
+
+  function renderAudit() {
+    var html = '';
+    AUDIT.forEach(function(a) {
+      html += '<tr>'
+        + '<td>' + a.ts + '</td>'
+        + '<td>' + a.device + '</td>'
+        + '<td style="font-weight:600;">' + a.action + '</td>'
+        + '<td>' + a.by + '</td>'
+        + '<td><span class="flag ' + a.outcome + '">' + cap(a.outcome) + '</span></td>'
+        + '</tr>';
+    });
+    document.getElementById('auditLog').innerHTML = html;
+  }
+
+  // ---- Stat tiles ----
+  function updateTiles() {
+    var online = DEVICES.filter(function(d) { return d.status === 'online'; }).length;
+    document.getElementById('tileOnline').textContent = online + '/' + DEVICES.length;
+    document.getElementById('tileOnlineSub').textContent = online === DEVICES.length ? 'all devices reachable' : (DEVICES.length - online) + ' unreachable';
+    document.getElementById('tilePending').textContent = pendingCount;
+    document.getElementById('tilePendingSub').textContent = pendingCount === 0 ? 'all confirmed' : 'awaiting confirmation';
+    document.getElementById('tileActions').textContent = AUDIT.length;
+  }
+
+  // ---- Init ----
+  DEVICES.forEach(function(d) { renderCard(d); });
+  renderAudit();
+  updateTiles();
+
+})();
+</script>
+</body>
+</html>

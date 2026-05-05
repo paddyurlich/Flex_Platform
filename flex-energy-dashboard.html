@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Energy Dashboard &mdash; Blackcurrent</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+
+  <style>
+    /* ===== Energy Dashboard — page-specific layout ===== */
+    .dash-grid { display: grid; gap: 8px; }
+
+    /* KPI tile row */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .kpi-tile {
+      padding: 18px 22px;
+      min-height: 88px;
+      display: flex; flex-direction: column; justify-content: center;
+      border-radius: 2px;
+    }
+    .kpi-tile .kpi-value {
+      font-size: 36px; font-weight: 800; color: var(--charcoal);
+      letter-spacing: -0.02em; line-height: 1;
+      font-family: var(--mono); font-variant-numeric: tabular-nums;
+    }
+    .kpi-tile .kpi-value .unit { font-size: 18px; font-weight: 700; margin-left: 1px; }
+    .kpi-tile .kpi-label { font-size: 13px; color: var(--charcoal); margin-top: 6px; }
+    .kpi-tile .kpi-label-top {
+      font-size: 13px; color: var(--steel);
+      font-weight: 700; margin-bottom: 8px;
+    }
+    .kpi-tile .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* Brand-system KPI tile colours */
+    .kpi-rust   { background: rgba(236,95,48,0.10); border-left: 3px solid var(--rust); }
+    .kpi-eco    { background: rgba(42,138,78,0.10); border-left: 3px solid #2a8a4e; }
+    .kpi-amber  { background: rgba(200,144,10,0.10); border-left: 3px solid #c8900a; }
+    [data-theme="dark"] .kpi-rust  { background: rgba(236,95,48,0.14); }
+    [data-theme="dark"] .kpi-eco   { background: rgba(42,138,78,0.14); }
+    [data-theme="dark"] .kpi-amber { background: rgba(200,144,10,0.14); }
+
+    /* Tariff (charcoal) tiles */
+    .tariff-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .tariff-tile {
+      background: var(--charcoal);
+      color: var(--egg);
+      padding: 16px 22px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-radius: 2px;
+    }
+    .tariff-tile .tariff-label { font-size: 13px; font-weight: 600; }
+    .tariff-tile .tariff-value { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .tariff-caption {
+      text-align: right;
+      font-size: 11px;
+      color: var(--steel);
+      margin-top: -2px;
+    }
+
+    /* Stagger animation for KPI and tariff tiles */
+    .kpi-tile, .tariff-tile {
+      animation: card-in 0.22s ease-out both;
+    }
+    .kpi-tile:nth-child(2), .tariff-tile:nth-child(2) { animation-delay: 0.04s; }
+    .kpi-tile:nth-child(3), .tariff-tile:nth-child(3) { animation-delay: 0.08s; }
+
+    /* Two-card row: Grid activity + Energy breakdown */
+    .dash-row {
+      display: grid;
+      grid-template-columns: 1fr 1.45fr;
+      gap: 8px;
+    }
+    @media (max-width: 1100px) {
+      .dash-row { grid-template-columns: 1fr; }
+    }
+
+    /* Grid Activity card */
+    .grid-activity-card .card-head { justify-content: space-between; }
+    .badge-live {
+      background: #b8e7c2; color: #1b5d2a;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 999px;
+      letter-spacing: 0.04em;
+    }
+    /* Power flow diagram */
+    .flow-diagram { width: 100%; height: auto; display: block; }
+    .flow-backbone { stroke: var(--line); stroke-width: 1.5; }
+    .dot-solar   { fill: #c8900a; }
+    .dot-battery { fill: #7040b8; }
+    .dot-grid    { fill: #c0455a; }
+    .node-accent-pv      { fill: #c8900a; }
+    .node-accent-grid    { fill: #c0455a; }
+    .node-accent-house   { fill: #3d62a8; }
+    .node-accent-battery { fill: #7040b8; }
+    .node-body { fill: #fdf9f0; }
+    [data-theme="dark"] .node-body { fill: #201d19; }
+    .node-label {
+      font: 700 10.5px/1 system-ui, sans-serif;
+      fill: var(--steel);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .node-value {
+      font: 800 19px/1 system-ui, sans-serif;
+      fill: var(--charcoal);
+      font-variant-numeric: tabular-nums;
+    }
+    .node-sub { font: 500 10px/1 system-ui, sans-serif; fill: var(--muted); }
+    [data-theme="dark"] .node-value { fill: var(--egg); }
+    .soc-track { fill: rgba(0,0,0,0.10); }
+    .soc-fill  { fill: #7040b8; }
+    [data-theme="dark"] .soc-track { fill: rgba(255,255,255,0.10); }
+    [data-theme="dark"] .soc-fill  { fill: #9060d8; }
+
+    /* Energy breakdown card */
+    .energy-balance-card .card-body {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px 24px;
+    }
+    .sankey-wrap {
+      grid-column: 1 / -1;
+      min-height: 200px;
+    }
+    @media (max-width: 720px) {
+      .energy-balance-card .card-body {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .metric-tile {
+      display: flex; flex-direction: column; gap: 2px;
+      min-width: 0;
+    }
+    .metric-head {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 800; font-size: 15px;
+      margin-bottom: 6px;
+      color: var(--charcoal);
+    }
+    .metric-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-row .key { color: var(--charcoal); }
+    .metric-row .val { font-weight: 700; }
+    .metric-row .val .unit { font-size: 11px; color: var(--muted); margin-left: 1px; }
+
+    .dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 2px;
+    }
+    .dot.import      { background: #ee7d83; }
+    .dot.gen         { background: #f4cf68; }
+    .dot.cons        { background: #7593c2; }
+    .dot.export      { background: #7fc89a; }
+    .dot.discharge   { background: #7dd9c8; }
+    .dot.charge      { background: #c8a3df; }
+
+    /* Chart card */
+    .chart-card { border-radius: 2px; overflow: hidden; background: #fff; border: 1px solid var(--line); }
+    .chart-head {
+      background: var(--charcoal);
+      color: var(--egg);
+      padding: 12px 18px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .chart-body { padding: 16px 18px 8px; height: 360px; position: relative; }
+    .chart-legend {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      padding: 6px 18px 14px;
+      font-size: 11px;
+      color: var(--charcoal);
+      font-variant-numeric: tabular-nums;
+    }
+    .chart-legend .legend-item { display: flex; align-items: center; gap: 6px; }
+    .chart-legend .legend-line {
+      width: 14px; height: 0;
+      border-top: 2px dashed #c63b3b;
+    }
+
+    /* Mobile tweaks */
+    @media (max-width: 820px) {
+      .kpi-row, .tariff-row { grid-template-columns: 1fr; }
+      .kpi-tile .kpi-value { font-size: 30px; }
+    }
+
+    /* Dark mode overrides */
+    [data-theme="dark"] .kpi-tile .kpi-value,
+    [data-theme="dark"] .kpi-tile .kpi-label { color: var(--egg); }
+    [data-theme="dark"] .kpi-tile .kpi-label-top { color: var(--steel); }
+    [data-theme="dark"] .metric-row { border-bottom-color: #2e2a25; }
+    [data-theme="dark"] .metric-head,
+    [data-theme="dark"] .metric-row .key { color: var(--egg); }
+    [data-theme="dark"] .chart-card { background: #1c1a17; border-color: #2e2a25; }
+  </style>
+</head>
+<body data-page="energy-dashboard">
+
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo" aria-label="Blackcurrent">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">
+          <g>
+            <path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>
+            <path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>
+            <path d="M97.61,13.58l-3.95,3.35c-1.09-1.31-2.7-2.07-4.41-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-1.98,2.51-5.03,3.93-8.22,3.84-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.12-.19,6.16,1.1,8.18,3.49h0Z"/>
+            <path d="M106.07,17.63h1.97l5.75-7.3h6.77l-8.08,9.59,8.15,10.83h-6.77l-5.92-8.29h-1.87v8.29h-5.5V.32h5.5v17.32Z"/>
+            <path d="M139.5,13.58l-3.99,3.35c-1.07-1.32-2.68-2.08-4.37-2.08-2.88.05-5.18,2.43-5.13,5.31,0,.11,0,.22.02.33-.25,2.87,1.87,5.4,4.74,5.66.12.01.25.02.37.02,1.71-.03,3.33-.79,4.44-2.08l3.95,3.53c-2.02,2.44-5.06,3.8-8.22,3.67-5.84.2-10.73-4.38-10.93-10.22,0-.19,0-.38,0-.57,0-5.84,4.73-10.58,10.57-10.59.12,0,.24,0,.36,0,3.15-.15,6.19,1.22,8.18,3.67Z"/>
+            <path d="M161.69,22.04c.25,4.86-3.49,9.01-8.35,9.26-.4.02-.81.01-1.21-.02-4.84.49-9.17-3.03-9.67-7.88-.05-.45-.06-.91-.03-1.36v-11.78h5.54v11.28c0,3.28,1.8,4.62,4.16,4.62s4.06-1.48,4.06-4.62v-11.28h5.5v11.78Z"/>
+            <path d="M180.34,10.16l-.85,5.47c-1.06-.42-2.18-.63-3.32-.63-2.25-.16-4.21,1.55-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.61V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79,1.02-.04,2.03.1,3,.42Z"/>
+            <path d="M196.99,10.16l-.85,5.47c-1.05-.42-2.18-.63-3.31-.63-2.25-.16-4.21,1.54-4.36,3.8-.02.27-.01.55.03.82v11.14h-5.5V10.26h5.36v2.26c1.28-1.89,3.47-2.95,5.75-2.79.98-.03,1.96.11,2.89.42h0Z"/>
+            <path d="M218.04,20.49c.04.62.04,1.25,0,1.87h-14.63c.36,2.53,2.6,4.37,5.15,4.23,1.94.02,3.83-.66,5.33-1.9l3.21,3.53c-2.35,2.07-5.4,3.17-8.53,3.07-5.6.24-10.34-4.11-10.58-9.71-.01-.29-.01-.58,0-.87-.41-5.56,3.76-10.39,9.31-10.8.35-.03.7-.03,1.05-.02,5.45.08,9.81,4.57,9.72,10.02,0,.2-.01.4-.03.59h0ZM203.44,18.59h9.06c-.17-2.32-2.11-4.12-4.44-4.09-2.39-.1-4.43,1.71-4.62,4.09Z"/>
+            <path d="M240.89,17.63v13.05h-5.54v-11.18c0-2.96-1.48-4.58-3.98-4.58-2.32-.09-4.27,1.72-4.36,4.03,0,.2,0,.39.02.59v11.21h-5.54V10.26h5.4v2.43c1.35-1.97,3.64-3.1,6.03-2.96,4.2-.2,7.77,3.05,7.97,7.25.01.22.01.43,0,.65Z"/>
+            <path d="M243.82,10.26v-6.1h5.54v6.1h7.41v4.9h-7.41v7.51c0,2.54,1.34,3.53,3.07,3.53,1.33-.19,2.59-.72,3.67-1.52l2.01,4.3c-1.97,1.43-4.34,2.18-6.77,2.15-5.08.14-7.51-2.72-7.51-8.04v-7.93"/>
+            <path d="M17.91,0C8.1-.08.08,7.82,0,17.64c-.08,9.82,7.82,17.84,17.64,17.91.09,0,.18,0,.28,0V0Z"/>
+            <path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>
+            <path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>
+          </g>
+        </svg>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>
+      </div>
+
+      <div class="product-tag"><span>Flex</span> &nbsp;Platform</div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Energy</div>
+        <a class="nav-item" data-nav="portfolio" href="flex-portfolio.html">Portfolio</a>
+        <a class="nav-item" data-nav="portfolio-sites" href="flex-portfolio-sites.html">Portfolio - Sites</a>
+        <a class="nav-item" data-nav="energy-dashboard" href="flex-energy-dashboard.html">Energy Dashboard</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Operate</div>
+        <a class="nav-item" data-nav="load-monitoring" href="flex-load-monitoring.html">Flex:Load Monitoring</a>
+        <a class="nav-item" data-nav="schedule" href="flex-schedule.html">Flex:Schedule</a>
+        <a class="nav-item" data-nav="control" href="flex-control.html">Flex:Control</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Optimise</div>
+        <a class="nav-item" data-nav="tariff" href="flex-tariff.html">Flex:Tariff</a>
+        <a class="nav-item" data-nav="assure" href="flex-assure.html">Flex:Assure</a>
+        <a class="nav-item" data-nav="simulator" href="flex-simulator.html">Flex:Simulator</a>
+        <a class="nav-item" data-nav="insights" href="flex-insights.html">Flex:Insights</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Data</div>
+        <a class="nav-item" data-nav="data-export" href="flex-data-export.html">Flex:DataExport</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Help</div>
+        <a class="nav-item" data-nav="faq" href="flex-faq.html">FAQ</a>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <section class="main">
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">SITES / <strong>FOREST LODGE</strong> / ENERGY DASHBOARD</div>
+        <div class="topbar-right">
+          <div class="site-selector">
+            <span>Forest Lodge</span>
+            <span class="chev">&#9662;</span>
+          </div>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/>
+              <line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/>
+              <line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/>
+              <line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/>
+            </svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <main class="page">
+
+        <header class="page-head">
+          <span class="module-tag">Energy Dashboard</span>
+          <h1>Energy Dashboard</h1>
+          <p class="page-sub">Live site overview &mdash; generation, consumption, battery state, and tariff costs.</p>
+        </header>
+
+        <div class="dash-grid">
+
+          <!-- ============== KPI tiles ============== -->
+          <div class="kpi-row">
+            <div class="kpi-tile kpi-rust">
+              <div class="kpi-value">94<span class="unit">%</span></div>
+              <div class="kpi-label">Self Consumption</div>
+            </div>
+            <div class="kpi-tile kpi-eco">
+              <div class="kpi-value">17<span class="unit">kg</span></div>
+              <div class="kpi-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2a8a4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 2px;">
+                  <path d="M11 20A7 7 0 0 1 4 13c0-3 1-5 4-7s5-3 9-3c0 4-1 7-3 9s-4 4-7 4z"/>
+                  <path d="M4 13c4-1 7-2 11-6"/>
+                </svg>
+                Carbon Offset
+              </div>
+              <div class="kpi-sub">Your Carbon Offset for this period.</div>
+            </div>
+            <div class="kpi-tile kpi-amber">
+              <div class="kpi-label-top">Generation</div>
+              <div class="kpi-value">131<span class="unit">kWh</span></div>
+            </div>
+          </div>
+
+          <!-- ============== Tariff tiles ============== -->
+          <div class="tariff-row">
+            <div class="tariff-tile">
+              <span class="tariff-label">Tariff Import Cost</span>
+              <span class="tariff-value">$45.64</span>
+            </div>
+            <div class="tariff-tile">
+              <span class="tariff-label">Tariff Export Revenue</span>
+              <span class="tariff-value">$1.17</span>
+            </div>
+            <div class="tariff-tile">
+              <span class="tariff-label">Tariff Fixed Cost</span>
+              <span class="tariff-value">$1.50</span>
+            </div>
+          </div>
+          <div class="tariff-caption">*Estimated values based on configured tariff.</div>
+
+          <!-- ============== Grid Activity + Energy breakdown ============== -->
+          <div class="dash-row">
+
+            <!-- Grid Activity -->
+            <div class="card grid-activity-card">
+              <div class="card-head">
+                <h2>Grid Activity</h2>
+                <span class="badge-live">Live</span>
+              </div>
+              <div class="card-body">
+                <svg class="flow-diagram" viewBox="0 0 560 366" xmlns="http://www.w3.org/2000/svg" aria-label="Power flow diagram">
+                  <defs>
+                    <!-- Glow filter for animated dots -->
+                    <filter id="dot-glow" x="-80%" y="-80%" width="260%" height="260%">
+                      <feGaussianBlur stdDeviation="3" result="blur"/>
+                      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <!-- Clip paths — each clips the body rect to the node rounded shape -->
+                    <clipPath id="cp-pv">   <rect x="215" y="12"  width="130" height="90"  rx="10"/></clipPath>
+                    <clipPath id="cp-grid"> <rect x="8"   y="128" width="130" height="100" rx="10"/></clipPath>
+                    <clipPath id="cp-house"><rect x="422" y="128" width="130" height="100" rx="10"/></clipPath>
+                    <clipPath id="cp-bat">  <rect x="215" y="242" width="130" height="116" rx="10"/></clipPath>
+                  </defs>
+
+                  <!-- ── Backbone lines ── -->
+                  <line x1="280" y1="102" x2="280" y2="242" class="flow-backbone"/>
+                  <line x1="138" y1="178" x2="422" y2="178" class="flow-backbone"/>
+
+                  <!-- ── animateMotion paths (invisible) ── -->
+                  <path id="fp-pv-house"     d="M280,102 L280,178 L422,178" fill="none" stroke="none"/>
+                  <path id="fp-bat-house"    d="M280,242 L280,178 L422,178" fill="none" stroke="none"/>
+                  <path id="fp-pv-grid"      d="M280,102 L280,178 L138,178" fill="none" stroke="none"/>
+                  <path id="fp-pv-battery"   d="M280,102 L280,242"          fill="none" stroke="none"/>
+                  <path id="fp-grid-house"   d="M138,178 L422,178"          fill="none" stroke="none"/>
+                  <path id="fp-grid-battery" d="M138,178 L280,178 L280,242" fill="none" stroke="none"/>
+                  <path id="fp-bat-grid"     d="M280,242 L280,178 L138,178" fill="none" stroke="none"/>
+
+                  <!-- ── Active: PV → House 3.0 kW — 3 amber dots ── -->
+                  <circle r="6" class="dot-solar" filter="url(#dot-glow)"><animateMotion dur="1.6s" repeatCount="indefinite" begin="0.00s"><mpath href="#fp-pv-house"/></animateMotion></circle>
+                  <circle r="6" class="dot-solar" filter="url(#dot-glow)"><animateMotion dur="1.6s" repeatCount="indefinite" begin="0.53s"><mpath href="#fp-pv-house"/></animateMotion></circle>
+                  <circle r="6" class="dot-solar" filter="url(#dot-glow)"><animateMotion dur="1.6s" repeatCount="indefinite" begin="1.07s"><mpath href="#fp-pv-house"/></animateMotion></circle>
+
+                  <!-- ── Active: Battery → House 0.8 kW — 2 violet dots ── -->
+                  <circle r="6" class="dot-battery" filter="url(#dot-glow)"><animateMotion dur="2.6s" repeatCount="indefinite" begin="0.00s"><mpath href="#fp-bat-house"/></animateMotion></circle>
+                  <circle r="6" class="dot-battery" filter="url(#dot-glow)"><animateMotion dur="2.6s" repeatCount="indefinite" begin="1.30s"><mpath href="#fp-bat-house"/></animateMotion></circle>
+
+                  <!-- ══ PV NODE — top centre ══ -->
+                  <rect x="215" y="12"  width="130" height="90"  rx="10" class="node-accent-pv"/>
+                  <rect x="215" y="26"  width="130" height="76"  clip-path="url(#cp-pv)"   class="node-body"/>
+                  <!-- Sun: solid core + 8 rays -->
+                  <circle cx="280" cy="50" r="9" fill="#c8900a"/>
+                  <line x1="280" y1="35" x2="280" y2="31" stroke="#c8900a" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="280" y1="65" x2="280" y2="69" stroke="#c8900a" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="265" y1="50" x2="261" y2="50" stroke="#c8900a" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="295" y1="50" x2="299" y2="50" stroke="#c8900a" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="269.4" y1="39.4" x2="266.5" y2="36.5" stroke="#c8900a" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="290.6" y1="60.6" x2="293.5" y2="63.5" stroke="#c8900a" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="290.6" y1="39.4" x2="293.5" y2="36.5" stroke="#c8900a" stroke-width="2.2" stroke-linecap="round"/>
+                  <line x1="269.4" y1="60.6" x2="266.5" y2="63.5" stroke="#c8900a" stroke-width="2.2" stroke-linecap="round"/>
+                  <text x="280" y="74" text-anchor="middle" class="node-label">PV Generation</text>
+                  <text x="280" y="93" text-anchor="middle" class="node-value">3.2 kW</text>
+
+                  <!-- ══ GRID NODE — left ══ -->
+                  <rect x="8"   y="128" width="130" height="100" rx="10" class="node-accent-grid"/>
+                  <rect x="8"   y="142" width="130" height="86"  clip-path="url(#cp-grid)"  class="node-body"/>
+                  <!-- Lightning bolt (centred at 73, 165) -->
+                  <path d="M76,152 L66,171 L74,171 L69,180 L81,162 L73,162 Z" fill="#c0455a"/>
+                  <text x="73" y="193" text-anchor="middle" class="node-label">Grid</text>
+                  <text x="73" y="211" text-anchor="middle" class="node-value">0 W</text>
+                  <text x="73" y="223" text-anchor="middle" class="node-sub">Standby</text>
+
+                  <!-- ══ HOUSE NODE — right ══ -->
+                  <rect x="422" y="128" width="130" height="100" rx="10" class="node-accent-house"/>
+                  <rect x="422" y="142" width="130" height="86"  clip-path="url(#cp-house)" class="node-body"/>
+                  <!-- House icon (centred at 487, 165) -->
+                  <polygon points="487,151 501,165 473,165" fill="#3d62a8" opacity="0.75"/>
+                  <rect x="476" y="165" width="22" height="15" fill="#3d62a8" opacity="0.55"/>
+                  <rect x="483" y="168" width="8"  height="12" fill="#3d62a8" opacity="0.9"/>
+                  <text x="487" y="193" text-anchor="middle" class="node-label">Consumption</text>
+                  <text x="487" y="211" text-anchor="middle" class="node-value">4.0 kW</text>
+                  <text x="487" y="223" text-anchor="middle" class="node-sub">Site demand</text>
+
+                  <!-- ══ BATTERY NODE — bottom centre ══ -->
+                  <rect x="215" y="242" width="130" height="116" rx="10" class="node-accent-battery"/>
+                  <rect x="215" y="256" width="130" height="102" clip-path="url(#cp-bat)"   class="node-body"/>
+                  <!-- Battery icon (centred at 280, 276): outline + terminal + 30% fill -->
+                  <rect x="261" y="266" width="32" height="18" rx="3" fill="none" stroke="#7040b8" stroke-width="2"/>
+                  <rect x="293" y="270" width="4"  height="10" rx="1.5" fill="#7040b8"/>
+                  <rect x="263" y="268" width="9"  height="14" rx="2" fill="#7040b8" opacity="0.85"/>
+                  <text x="280" y="299" text-anchor="middle" class="node-label">Battery</text>
+                  <text x="280" y="318" text-anchor="middle" class="node-value">0.8 kW ↑</text>
+                  <!-- SoC bar (track x=228–332, 104px; 30% = 31px) -->
+                  <rect x="228" y="328" width="104" height="6" rx="3" class="soc-track"/>
+                  <rect x="228" y="328" width="31"  height="6" rx="3" class="soc-fill"/>
+                  <text x="228" y="347" class="node-sub">30% SoC</text>
+                  <text x="332" y="347" text-anchor="end" class="node-sub">42.2 kWh cap.</text>
+
+                </svg>
+              </div>
+            </div>
+
+            <!-- Energy In/Out + breakdown -->
+            <div class="card energy-balance-card">
+              <div class="card-head"><h2>Energy Balance</h2></div>
+              <div class="card-body">
+                <!-- Sankey diagram -->
+                <div class="sankey-wrap" id="sankeyChart"></div>
+
+                <!-- Import breakdown -->
+                <div class="metric-tile">
+                  <div class="metric-head"><span class="dot import"></span>Import</div>
+                  <div class="metric-row"><span class="key">Total</span><span class="val">138<span class="unit">kWh</span></span></div>
+                  <div class="metric-row"><span class="key">of In</span><span class="val">51%</span></div>
+                </div>
+
+                <!-- Generation breakdown -->
+                <div class="metric-tile">
+                  <div class="metric-head"><span class="dot gen"></span>Solar</div>
+                  <div class="metric-row"><span class="key">Total</span><span class="val">131<span class="unit">kWh</span></span></div>
+                  <div class="metric-row"><span class="key">of In</span><span class="val">49%</span></div>
+                </div>
+
+                <!-- Consumption breakdown -->
+                <div class="metric-tile">
+                  <div class="metric-head"><span class="dot cons"></span>Consumption</div>
+                  <div class="metric-row"><span class="key">Total</span><span class="val">249<span class="unit">kWh</span></span></div>
+                  <div class="metric-row"><span class="key">of Out</span><span class="val">97%</span></div>
+                </div>
+
+                <!-- Export breakdown -->
+                <div class="metric-tile">
+                  <div class="metric-head"><span class="dot export"></span>Export</div>
+                  <div class="metric-row"><span class="key">Total</span><span class="val">8<span class="unit">kWh</span></span></div>
+                  <div class="metric-row"><span class="key">of Out</span><span class="val">3%</span></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ============== Chart ============== -->
+          <div class="chart-card">
+            <div class="chart-head">Chart</div>
+            <div class="chart-body">
+              <canvas id="powerChart"></canvas>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item"><span class="dot import"></span>Import</div>
+              <div class="legend-item"><span class="dot gen"></span>Generation</div>
+              <div class="legend-item"><span class="dot discharge"></span>Discharge</div>
+              <div class="legend-item"><span class="dot export"></span>Export</div>
+              <div class="legend-item"><span class="dot cons"></span>Consumption</div>
+              <div class="legend-item"><span class="dot charge"></span>Charge</div>
+              <div class="legend-item"><span class="legend-line"></span>State of Charge</div>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </section>
+  </div>
+</div>
+
+<script src="assets/flex-platform.js"></script>
+<script src="https://www.gstatic.com/charts/loader.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// =====================================================
+// Energy Balance — Sankey diagram (Google Charts)
+// =====================================================
+google.charts.load('current', { packages: ['sankey'] });
+google.charts.setOnLoadCallback(drawSankey);
+
+function drawSankey() {
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var labelCol = dark ? '#e0d8cc' : '#3a3330';
+  var bgCol    = 'transparent';
+
+  var data = new google.visualization.DataTable();
+  data.addColumn('string', 'From');
+  data.addColumn('string', 'To');
+  data.addColumn('number', 'Weight');
+  data.addRows([
+    ['Grid Import', 'Consumption',    126],
+    ['Grid Import', 'Battery Charge',  12],
+    ['Solar',       'Consumption',    123],
+    ['Solar',       'Export',           8],
+  ]);
+
+  var opts = {
+    width: '100%',
+    height: 200,
+    backgroundColor: bgCol,
+    sankey: {
+      node: {
+        colors: ['#ee7d83', '#f4cf68', '#7593c2', '#c8a3df', '#7fc89a'],
+        label: { fontName: 'Inter', fontSize: 12, color: labelCol, bold: false },
+        width: 10,
+        nodePadding: 28,
+      },
+      link: { colorMode: 'gradient', fillOpacity: 0.35 },
+    },
+  };
+
+  var chart = new google.visualization.Sankey(document.getElementById('sankeyChart'));
+  chart.draw(data, opts);
+}
+
+// Redraw Sankey when theme toggles
+new MutationObserver(function (mutations) {
+  mutations.forEach(function (m) {
+    if (m.attributeName === 'data-theme') drawSankey();
+  });
+}).observe(document.documentElement, { attributes: true });
+</script>
+<script>
+// =====================================================
+// Energy Dashboard — synthetic chart data + Chart.js
+// =====================================================
+(function () {
+  'use strict';
+
+  // ---- Generate synthetic half-hour data for one day (Apr 30, 2026) ----
+  // Data only runs to ~16:00 to match the screenshot ("today so far").
+  var TOTAL_BUCKETS = 48;        // 24h * 2
+  var DATA_END = 33;             // ~16:30, mirrors screenshot
+
+  var labels = [];
+  for (var i = 0; i < TOTAL_BUCKETS; i++) {
+    var h = Math.floor(i / 2);
+    var m = (i % 2) ? '30' : '00';
+    labels.push(String(h).padStart(2, '0') + ':' + m);
+  }
+
+  function gauss(t, peak, width) { return Math.exp(-Math.pow((t - peak) / width, 2)); }
+
+  var importV = [], generationV = [], dischargeV = [];
+  var consumptionV = [], chargeV = [], exportV = [];
+  var soc = [];
+  var socNow = 12;
+
+  for (var b = 0; b < TOTAL_BUCKETS; b++) {
+    if (b > DATA_END) {
+      importV.push(null); generationV.push(null); dischargeV.push(null);
+      consumptionV.push(null); chargeV.push(null); exportV.push(null);
+      soc.push(null);
+      continue;
+    }
+    var t = b / 2; // hour as float
+
+    // Generation: bell, peaks ~12.5h, span ~6-19
+    var gen = (t >= 6 && t <= 19) ? 65 * gauss(t, 12.5, 3.6) : 0;
+    if (gen < 0.5) gen = 0;
+
+    // Consumption: baseline + morning + evening peaks
+    var cons = 8 + 1.5 * Math.sin(t * 1.3);
+    if (t >= 5 && t <= 9)  cons += 35 * gauss(t, 7.0, 0.9);
+    if (t >= 17 && t <= 22) cons += 30 * gauss(t, 19.0, 1.4);
+    cons = Math.max(cons, 5);
+
+    // Net before battery: positive means surplus, negative means deficit
+    var netSupply = gen - cons;
+
+    var charge = 0, discharge = 0, exportPow = 0, importPow = 0;
+
+    if (netSupply > 0) {
+      // surplus: charge battery (up to capacity), then export
+      var chargeRoom = Math.max(0, 90 - socNow);  // % room
+      var maxCharge = Math.min(30, chargeRoom * 0.9); // kW limited
+      charge = Math.min(netSupply, maxCharge);
+      exportPow = Math.max(0, netSupply - charge);
+      socNow = Math.min(95, socNow + charge * 0.5 / 0.42); // 0.5h * 100 / 42.2kWh
+    } else {
+      var deficit = -netSupply;
+      // discharge battery in evening; otherwise import
+      var allowDischarge = (t >= 16 && t <= 22 && socNow > 25);
+      if (allowDischarge) {
+        var maxDis = Math.min(30, (socNow - 20) * 0.4);
+        discharge = Math.min(deficit, maxDis);
+        socNow = Math.max(15, socNow - discharge * 0.5 / 0.42);
+      }
+      importPow = Math.max(0, deficit - discharge);
+    }
+
+    importV.push(+importPow.toFixed(2));
+    generationV.push(+gen.toFixed(2));
+    dischargeV.push(+discharge.toFixed(2));
+    consumptionV.push(+(-cons).toFixed(2));
+    chargeV.push(+(-charge).toFixed(2));
+    exportV.push(+(-exportPow).toFixed(2));
+    soc.push(+socNow.toFixed(1));
+  }
+
+  // ---- Chart.js config ----
+  var ctx = document.getElementById('powerChart').getContext('2d');
+  var transparent = function (hex, a) {
+    return hex + Math.round(a * 255).toString(16).padStart(2, '0');
+  };
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        // POSITIVE STACK
+        {
+          label: 'Import', data: importV,
+          borderColor: '#ee7d83', backgroundColor: transparent('#ee7d83', 0.55),
+          fill: true, stack: 'pos', pointRadius: 0, borderWidth: 1,
+          tension: 0.25
+        },
+        {
+          label: 'Generation', data: generationV,
+          borderColor: '#f4cf68', backgroundColor: transparent('#f4cf68', 0.55),
+          fill: true, stack: 'pos', pointRadius: 0, borderWidth: 1,
+          tension: 0.25
+        },
+        {
+          label: 'Discharge', data: dischargeV,
+          borderColor: '#7dd9c8', backgroundColor: transparent('#7dd9c8', 0.55),
+          fill: true, stack: 'pos', pointRadius: 0, borderWidth: 1,
+          tension: 0.25
+        },
+        // NEGATIVE STACK
+        {
+          label: 'Consumption', data: consumptionV,
+          borderColor: '#7593c2', backgroundColor: transparent('#7593c2', 0.55),
+          fill: true, stack: 'neg', pointRadius: 0, borderWidth: 1,
+          tension: 0.25
+        },
+        {
+          label: 'Charge', data: chargeV,
+          borderColor: '#c8a3df', backgroundColor: transparent('#c8a3df', 0.55),
+          fill: true, stack: 'neg', pointRadius: 0, borderWidth: 1,
+          tension: 0.25
+        },
+        {
+          label: 'Export', data: exportV,
+          borderColor: '#7fc89a', backgroundColor: transparent('#7fc89a', 0.55),
+          fill: true, stack: 'neg', pointRadius: 0, borderWidth: 1,
+          tension: 0.25
+        },
+        // SOC overlay (right axis)
+        {
+          label: 'State of Charge', data: soc,
+          borderColor: '#c63b3b', backgroundColor: 'transparent',
+          borderWidth: 2, borderDash: [6, 4],
+          fill: false, yAxisID: 'soc', stack: 'soc',
+          pointRadius: 0, tension: 0.25
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#22201d',
+          callbacks: {
+            label: function (ctx) {
+              var v = ctx.raw;
+              if (v === null || v === undefined) return null;
+              if (ctx.dataset.label === 'State of Charge') return 'SoC: ' + v + '%';
+              return ctx.dataset.label + ': ' + Math.abs(v).toFixed(1) + ' kW';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            maxRotation: 0, autoSkip: true,
+            callback: function (val, idx) {
+              var lbl = this.getLabelForValue(val);
+              return (idx % 6 === 0) ? lbl : '';
+            },
+            color: '#5a5853',
+            font: { size: 10 }
+          },
+          grid: { color: '#e8e3d6' }
+        },
+        y: {
+          stacked: true,
+          title: { display: true, text: 'Power (kW)', color: '#5a5853', font: { size: 11 } },
+          grid: { color: '#e8e3d6' },
+          ticks: { color: '#5a5853', font: { size: 10 } },
+          suggestedMin: -50, suggestedMax: 50
+        },
+        soc: {
+          position: 'right',
+          min: 0, max: 100,
+          grid: { drawOnChartArea: false },
+          ticks: { color: '#5a5853', font: { size: 10 }, callback: function (v) { return v; } }
+        }
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>
