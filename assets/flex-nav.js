@@ -8,7 +8,7 @@
   'use strict';
 
   /* ── Blackcurrent wordmark SVG ─────────────────────────────────────── */
-  var LOGO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">'
+  var LOGO_BC = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.1 35.55" role="img" aria-label="Blackcurrent">'
     + '<g>'
     + '<path d="M50.11,30.75h-5.54V.32h5.54v30.43Z"/>'
     + '<path d="M75,30.75h-5.4v-2.26c-1.48,1.84-3.74,2.88-6.1,2.79-5.61-.11-10.07-4.74-9.96-10.35,0-.15,0-.3.02-.44-.25-5.58,4.07-10.32,9.65-10.57.1,0,.2,0,.29,0,2.36-.09,4.62.95,6.1,2.79v-2.43h5.4v20.49ZM59.21,20.49c0,2.92,2.37,5.29,5.29,5.29,2.92,0,5.29-2.37,5.29-5.29,0-2.92-2.37-5.29-5.29-5.29s-5.29,2.37-5.29,5.29h0Z"/>'
@@ -25,6 +25,32 @@
     + '<path d="M32.62,14.53c3.53,0,6-1.2,6-4.09h0c0-2.54-1.94-3.99-5.47-3.99h-8.22v8.08h7.69Z"/>'
     + '<path d="M33.11,28.95c3.95,0,6.42-1.2,6.42-4.09v-.18c0-2.54-2.08-3.99-5.82-3.99h-8.78v8.25h8.18Z"/>'
     + '</g></svg>';
+
+  /* ── Ember Labs wordmark SVG (Logo 1 Name.svg — icon grid + outlined text) */
+  /* Near-black icon cells use #1a1a1a so grid reads on dark sidebar.        */
+  /* eml-text class on the <g> lets CSS set wordmark fill (light on dark).   */
+  var LOGO_EMBER = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7190.81 1224.67" role="img" aria-label="ember labs">'
+    + '<rect fill="#2f6bff" x="865.15" width="359.51" height="359.51"/>'
+    + '<rect fill="#1a1a1a" x="432.38" width="359.51" height="359.51"/>'
+    + '<rect fill="#1a1a1a" x=".39" width="359.51" height="359.51"/>'
+    + '<rect fill="#2f6bff" x="864.76" y="432.58" width="359.51" height="359.51"/>'
+    + '<rect fill="#f2c300" x="431.98" y="432.58" width="359.51" height="359.51"/>'
+    + '<rect fill="#1a1a1a" y="432.58" width="359.51" height="359.51"/>'
+    + '<rect fill="#2f6bff" x="864.76" y="865.16" width="359.51" height="359.51"/>'
+    + '<rect fill="#1a1a1a" x="431.98" y="865.16" width="359.51" height="359.51"/>'
+    + '<rect fill="#1a1a1a" y="865.16" width="359.51" height="359.51"/>'
+    + '<g class="eml-text">'
+    + '<path d="M1853.9,693.48l96.11,51.06c-32.04,82.09-131.15,159.18-272.31,159.18-175.2,0-303.34-111.13-303.34-273.31s124.14-273.31,303.34-273.31,282.32,115.13,282.32,266.3v42.05h-471.53c16.02,84.09,91.1,136.15,189.21,136.15,87.1,0,151.17-44.05,176.2-108.12ZM1493.49,575.34h350.39c-8.01-55.06-73.08-118.13-172.19-118.13-83.09,0-155.17,41.05-178.2,118.13Z"/>'
+    + '<path d="M2043.1,367.11h120.14v67.08c38.04-43.05,94.11-77.09,184.21-77.09s149.17,37.04,184.21,98.11c50.06-59.07,120.14-98.11,213.24-98.11,163.18,0,241.27,102.12,241.27,254.29v281.32h-120.13v-266.3c0-93.1-41.05-159.18-139.16-159.18-103.12,0-152.17,64.07-152.17,161.18v264.3h-120.14v-266.3c0-93.1-41.05-159.18-139.16-159.18-104.12,0-152.17,64.07-152.17,161.18v264.3h-120.14V367.11Z"/>'
+    + '<path d="M3218.41,892.7h-120.14V173.89h120.14v260.29c38.04-41.05,108.12-77.09,204.23-77.09,181.2,0,288.33,124.14,288.33,273.31s-107.12,273.31-288.33,273.31c-96.11,0-166.19-36.04-204.23-77.09v66.07ZM3212.4,634.41c0,96.11,84.09,169.19,193.22,169.19,103.12,0,191.22-62.07,191.22-173.2s-88.1-173.2-191.22-173.2c-109.12,0-193.22,73.08-193.22,169.19v8.01Z"/>'
+    + '<path d="M4247.56,693.48l96.11,51.06c-32.04,82.09-131.15,159.18-272.31,159.18-175.2,0-303.34-111.13-303.34-273.31s124.14-273.31,303.34-273.31,282.32,115.13,282.32,266.3v42.05h-471.53c16.02,84.09,91.1,136.15,189.21,136.15,87.1,0,151.17-44.05,176.2-108.12ZM3887.15,575.34h350.39c-8.01-55.06-73.08-118.13-172.2-118.13-83.09,0-155.17,41.05-178.2,118.13Z"/>'
+    + '<path d="M4817.18,492.25c-24.03-6.01-35.04-9.01-62.07-9.01-120.13,0-198.22,51.06-198.22,176.2v233.26h-120.14V367.11h120.14v95.11c45.05-71.08,116.13-98.11,201.23-98.11,24.03,0,44.05,4,59.07,8.01v120.14Z"/>'
+    + '<path d="M5243.65,892.7h-90.1V173.89h90.1v718.81Z"/>'
+    + '<path d="M5335.74,746.53c0-97.11,84.09-147.17,207.23-161.18l231.26-26.03v-13.01c0-66.07-54.06-110.12-156.18-110.12-89.1,0-165.19,42.05-187.21,102.11l-75.09-34.04c33.04-88.1,142.16-145.16,264.3-145.16,151.17,0,241.27,67.08,241.27,188.21v236.27c0,39.04,26.03,50.06,84.1,37.04v72.08c-100.11,19.02-154.17-18.02-163.18-79.09l-1-5.01c-47.05,60.07-136.15,95.11-235.27,95.11-117.13,0-210.24-54.06-210.24-157.18ZM5774.23,631.41l-218.25,25.03c-78.09,9.01-132.15,29.03-132.15,89.1,0,54.06,51.06,84.09,129.14,84.09,103.12,0,221.25-48.05,221.25-146.17v-52.06Z"/>'
+    + '<path d="M6103.59,892.7h-90.1V173.89h90.1v287.32c39.04-56.06,116.13-102.11,220.25-102.11,176.2,0,286.32,120.14,286.32,272.31s-110.12,272.31-286.32,272.31c-104.12,0-181.21-46.05-220.25-103.12v92.1ZM6099.59,634.41c0,119.13,103.12,192.22,213.24,192.22,117.13,0,211.24-74.08,211.24-195.22s-94.11-196.22-211.24-196.22c-110.12,0-213.24,74.08-213.24,192.22v7.01Z"/>'
+    + '<path d="M6712.27,714.5c47.05,78.09,127.14,113.13,228.26,113.13,91.1,0,161.18-26.03,161.18-85.1,0-62.07-62.07-64.07-190.21-78.09-130.15-15.02-233.26-36.04-233.26-143.16,0-96.11,97.11-162.18,237.27-162.18,126.14,0,220.25,50.06,262.29,117.13l-61.07,53.06c-39.04-62.07-112.13-95.11-204.23-95.11s-147.17,31.04-147.17,79.09c0,52.06,53.06,58.07,165.19,71.08,140.16,16.02,260.29,28.03,260.29,151.17,0,110.12-119.13,168.19-249.28,168.19s-244.28-46.05-295.33-134.15l66.08-55.06Z"/>'
+    + '</g>'
+    + '</svg>';
 
   /* ── Navigation structure ──────────────────────────────────────────── */
   var NAV = [
@@ -44,7 +70,7 @@
     { group: 'Optimise', items: [
       { nav: 'tariff',    href: 'flex-tariff.html',    icon: 'receipt',      label: 'Flex:Tariff' },
       { nav: 'assure',    href: 'flex-assure.html',    icon: 'shield-check', label: 'Flex:Assure' },
-      { nav: 'simulator', href: 'flex-simulator.html',  icon: 'cpu',          label: 'Flex:Simulator' },
+      { nav: 'simulator', href: 'flex-simulator.html', icon: 'cpu',          label: 'Flex:Simulator' },
       { nav: 'insights',  href: 'flex-insights.html',  icon: 'bar-chart-2',  label: 'Flex:Insights' }
     ]},
     { group: 'Data', items: [
@@ -54,10 +80,18 @@
 
   /* ── Build and inject sidebar HTML ────────────────────────────────── */
   var activePage = (document.body.getAttribute('data-page') || '').trim();
+  var currentBrand = document.documentElement.getAttribute('data-brand') || 'blackcurrent';
 
-  var html = '<div class="logo" aria-label="Blackcurrent">'
-    + LOGO
+  var html = ''
+    /* Blackcurrent logo (default) */
+    + '<div class="logo logo-bc" aria-label="Blackcurrent">'
+    + LOGO_BC
     + '<button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>'
+    + '</div>'
+    /* Ember Labs logo (Logo 1 Name.svg — icon grid + wordmark) */
+    + '<div class="logo logo-ember" aria-label="ember labs">'
+    + LOGO_EMBER
+    + '<button class="sidebar-close" id="sidebarCloseEmber" aria-label="Close menu">&times;</button>'
     + '</div>'
     + '<div class="product-tag"><span>Flex</span> &nbsp;Platform</div>';
 
@@ -74,8 +108,41 @@
     html += '</div>';
   });
 
+  /* Brand switcher at bottom of nav */
+  var bcActive   = currentBrand !== 'ember' ? ' active active-bc'    : ' active-bc';
+  var emlActive  = currentBrand === 'ember' ? ' active active-ember'  : ' active-ember';
+  html += '<div class="brand-switcher">'
+    + '<button class="brand-btn' + bcActive  + '" id="brandBtnBc">Blackcurrent</button>'
+    + '<button class="brand-btn' + emlActive + '" id="brandBtnEmber">Ember</button>'
+    + '</div>';
+
   var sidebar = document.getElementById('sidebar');
   if (sidebar) sidebar.innerHTML = html;
 
   if (window.lucide) lucide.createIcons();
+
+  /* ── Brand switcher event handlers ────────────────────────────────── */
+  function setBrand(brand) {
+    document.documentElement.setAttribute('data-brand', brand);
+    try { localStorage.setItem('flex-brand', brand); } catch (e) {}
+
+    var btnBc    = document.getElementById('brandBtnBc');
+    var btnEmber = document.getElementById('brandBtnEmber');
+    if (btnBc && btnEmber) {
+      btnBc.className    = 'brand-btn' + (brand !== 'ember' ? ' active active-bc'   : ' active-bc');
+      btnEmber.className = 'brand-btn' + (brand === 'ember' ? ' active active-ember' : ' active-ember');
+    }
+  }
+
+  var btnBc    = document.getElementById('brandBtnBc');
+  var btnEmber = document.getElementById('brandBtnEmber');
+  if (btnBc)    btnBc.addEventListener('click',    function () { setBrand('blackcurrent'); });
+  if (btnEmber) btnEmber.addEventListener('click', function () { setBrand('ember'); });
+
+  /* Wire up the Ember close button to the same handler as the BC one */
+  var closeEmber = document.getElementById('sidebarCloseEmber');
+  var closeBC    = document.getElementById('sidebarClose');
+  if (closeEmber && closeBC) {
+    closeEmber.addEventListener('click', function () { closeBC.click(); });
+  }
 })();

@@ -15,6 +15,7 @@
       } catch (e) {}
     })();
   </script>
+  <script>try{var b=localStorage.getItem("flex-brand");if(b)document.documentElement.setAttribute("data-brand",b);}catch(e){}</script>
 
   <link rel="stylesheet" href="assets/flex-platform.css" />
 
@@ -425,33 +426,14 @@ function renderHistory() {
   });
 }
 
-/* ---- Theme + sidebar ---- */
-document.getElementById('themeToggle').addEventListener('click', function () {
-  var html = document.documentElement;
-  var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  html.setAttribute('data-theme', next);
-  try { localStorage.setItem('flex-theme', next); } catch (e) {}
-  DARK = next === 'dark';
-});
-
-(function () {
-  var menuBtn  = document.getElementById('menuBtn');
-  var sidebar  = document.getElementById('sidebar');
-  var backdrop = document.getElementById('sidebarBackdrop');
-  var closeBtn = document.getElementById('sidebarClose');
-  function openSidebar()  { sidebar.classList.add('is-open'); backdrop.classList.add('is-visible'); }
-  function closeSidebar() { sidebar.classList.remove('is-open'); backdrop.classList.remove('is-visible'); }
-  menuBtn.addEventListener('click', openSidebar);
-  closeBtn.addEventListener('click', closeSidebar);
-  backdrop.addEventListener('click', closeSidebar);
-})();
-
-(function () {
-  var page = document.body.getAttribute('data-page');
-  document.querySelectorAll('[data-nav]').forEach(function (el) {
-    if (el.getAttribute('data-nav') === page) el.classList.add('is-active');
+/* Keep DARK flag in sync when flex-platform.js toggles the theme */
+new MutationObserver(function (mutations) {
+  mutations.forEach(function (m) {
+    if (m.attributeName === 'data-theme') {
+      DARK = document.documentElement.getAttribute('data-theme') === 'dark';
+    }
   });
-})();
+}).observe(document.documentElement, { attributes: true });
 
 /* ---- Boot ---- */
 renderFeed();

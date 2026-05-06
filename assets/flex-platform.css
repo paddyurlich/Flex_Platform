@@ -33,7 +33,7 @@ html, body {
 body { padding: 0; min-height: 100vh; }
 
 /* ---------- shell ---------- */
-.frame { width: 100%; margin: 0; background: var(--egg); overflow: hidden; }
+.frame { width: 100%; margin: 0; background: var(--egg); overflow: clip; }
 .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
 
 /* ---------- sidebar ---------- */
@@ -42,6 +42,11 @@ body { padding: 0; min-height: 100vh; }
   color: var(--egg);
   border-right: 6px solid var(--rust);
   padding-bottom: 24px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  align-self: start;
 }
 .sidebar .logo {
   padding: 26px 22px 22px;
@@ -696,6 +701,96 @@ table.preview tbody tr.gap td {
 [data-theme="dark"] .component-row { border-bottom-color: #2e2a25; }
 [data-theme="dark"] .component-row .name { color: #f47445; }
 [data-theme="dark"] .component-row .desc { color: #a39e92; }
+
+/* ==========================================================================
+   Ember Labs brand — token overrides.
+   Activate with data-brand="ember" on <html>. Stacks with data-theme.
+   ========================================================================== */
+[data-brand="ember"] {
+  --rust:        #f2c300;
+  --charcoal:    #0b0b0b;
+  --sapphire:    #2f6bff;
+  --egg:         #f9f9f6;
+  --line:        #e0e0e0;
+  --line-strong: #c8c8c8;
+  --muted:       #555555;
+}
+
+/* Ember sidebar accent colours */
+[data-brand="ember"] .sidebar { border-right-color: var(--rust); }
+[data-brand="ember"] .nav-item.active { background: var(--rust); color: #0b0b0b; border-left-color: #0b0b0b; }
+[data-brand="ember"] .nav-item.active svg { opacity: 1; }
+[data-brand="ember"] .footer-lockup svg path { fill: var(--rust); }
+
+/* Ember wordmark paths — higher specificity beats [data-theme="dark"] logo rule */
+[data-brand="ember"] .sidebar .logo .eml-text path { fill: var(--egg); }
+
+/* Brand switcher — sits at bottom of sidebar above footer */
+.brand-switcher {
+  margin: 8px 14px 0;
+  display: flex;
+  background: rgba(255,255,255,0.06);
+  border-radius: 5px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.brand-btn {
+  flex: 1;
+  padding: 5px 4px;
+  border: none; border-radius: 3px;
+  background: transparent;
+  color: rgba(255,255,255,0.38);
+  font-size: 9px; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.brand-btn:hover { color: rgba(255,255,255,0.7); }
+.brand-btn.active { background: var(--rust); color: var(--charcoal); }
+
+/* Ember logo show/hide — must match .sidebar .logo specificity (0-2-0) */
+.sidebar .logo-ember { display: none; align-items: center; }
+.sidebar .logo-bc { display: flex; }
+
+[data-brand="ember"] .sidebar .logo-bc { display: none; }
+[data-brand="ember"] .sidebar .logo-ember { display: flex; }
+[data-brand="ember"] .brand-btn.active-bc { background: transparent; color: rgba(255,255,255,0.38); }
+[data-brand="ember"] .brand-btn.active-bc:hover { color: rgba(255,255,255,0.7); }
+[data-brand="ember"] .brand-btn.active-ember { background: var(--rust); color: #0b0b0b; }
+
+/* ==========================================================================
+   Ember dark mode — combined selector beats [data-theme="dark"] single attr.
+   Re-states every hardcoded orange (#f47445) value as Ember yellow (#f2c300).
+   ========================================================================== */
+[data-brand="ember"][data-theme="dark"] {
+  --rust: #f2c300;
+  --sapphire: #2f6bff;
+}
+[data-brand="ember"][data-theme="dark"] .sidebar { background: #080808; border-right-color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .sidebar .logo .eml-text path { fill: #f0eeec; }
+[data-brand="ember"][data-theme="dark"] .nav-item.active { background: #f2c300; color: #0b0b0b; border-left-color: #0b0b0b; }
+[data-brand="ember"][data-theme="dark"] .footer-lockup { background: #080808; border-top-color: #080808; }
+[data-brand="ember"][data-theme="dark"] .footer-lockup svg path { fill: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .page-head { border-bottom-color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .module-tag { background: #f2c300; color: #0b0b0b; }
+[data-brand="ember"][data-theme="dark"] .theme-toggle:hover { background: #f2c300; color: #0b0b0b; border-color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .helper strong { color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .preset.active { background: #f2c300; color: #0b0b0b; border-color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .radio.selected { background: #1c1600; border-color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .radio.selected .dot-outer { border-color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .radio.selected .dot-outer::after { background: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .btn.primary { background: #f2c300; color: #0b0b0b; border-color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .btn.primary:hover { background: #e8e3d6; color: #0b0b0b; }
+[data-brand="ember"][data-theme="dark"] .meta .val .accent { color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .flag.actual { background: #2f6bff; color: #ffffff; }
+[data-brand="ember"][data-theme="dark"] .flag.estimated,
+[data-brand="ember"][data-theme="dark"] .flag.warn { background: #f2c300; color: #0b0b0b; }
+[data-brand="ember"][data-theme="dark"] .recent td a { color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .stale-banner { border-left-color: #f2c300; }
+[data-brand="ember"][data-theme="dark"] .component-row .name { color: #f2c300; }
 
 /* ==========================================================================
    FlexModal — shared detail/drilldown modal.
