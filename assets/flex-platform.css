@@ -41,12 +41,14 @@ body { padding: 0; min-height: 100vh; }
   background: var(--charcoal);
   color: var(--egg);
   border-right: 6px solid var(--rust);
-  padding-bottom: 24px;
+  padding-bottom: 16px;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
   align-self: start;
+  display: flex;
+  flex-direction: column;
 }
 .sidebar .logo {
   padding: 26px 22px 22px;
@@ -727,7 +729,7 @@ table.preview tbody tr.gap td {
 
 /* Brand switcher — sits at bottom of sidebar above footer */
 .brand-switcher {
-  margin: 8px 14px 0;
+  margin: auto 14px 0;
   display: flex;
   background: rgba(255,255,255,0.06);
   border-radius: 5px;
