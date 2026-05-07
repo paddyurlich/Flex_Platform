@@ -1,0 +1,30 @@
+{
+	"nodes":[
+		{"id":"grp-optimise","type":"group","x":-400,"y":0,"width":300,"height":620,"color":"6","label":"Optimise"},
+		{"id":"grp-energy","type":"group","x":-1100,"y":0,"width":300,"height":620,"color":"5","label":"Energy"},
+		{"id":"grp-operate","type":"group","x":-750,"y":0,"width":300,"height":480,"color":"2","label":"Operate"},
+		{"id":"grp-overview","type":"group","x":-1450,"y":0,"width":300,"height":200,"color":"4","label":"Overview"},
+		{"id":"grp-data","type":"group","x":-50,"y":0,"width":300,"height":200,"color":"3","label":"Data"},
+		{"id":"pg-overview","type":"text","text":"**Portfolio Overview**\n`index.html`\nSite telemetry summary, KPIs, alerts","x":-1430,"y":50,"width":260,"height":120},
+		{"id":"pg-portfolio","type":"text","text":"**Portfolio**\n`flex-portfolio.html`\nSite listing, status badges, customer filter\n[[01-portfolio|→ PRD]]","x":-1080,"y":50,"width":260,"height":120},
+		{"id":"pg-portfolio-sites","type":"text","text":"**Portfolio — Sites**\n`flex-portfolio-sites.html`\nIndividual site detail, telemetry, modal drill-down\n[[01b-portfolio-sites|→ PRD]]","x":-1080,"y":190,"width":260,"height":120},
+		{"id":"pg-portfolio-map","type":"text","text":"**Portfolio — Map**\n`flex-portfolio-map.html`\nGeographic map of all assets, graduated battery symbols, filtering\n[[01c-portfolio-map|→ PRD]]","x":-1080,"y":330,"width":260,"height":120},
+		{"id":"pg-energy-dashboard","type":"text","text":"**Energy Dashboard**\n`flex-energy-dashboard.html`\nPower-flow charts, half-hourly data\n[[02-energy-dashboard|→ PRD]]","x":-1080,"y":470,"width":260,"height":120},
+		{"id":"pg-load-monitoring","type":"text","text":"**Flex:Load Monitoring**\n`flex-load-monitoring.html`\nReal-time load tracking across sites\n[[03-load-monitoring|→ PRD]]","x":-730,"y":50,"width":260,"height":120},
+		{"id":"pg-schedule","type":"text","text":"**Flex:Schedule**\n`flex-schedule.html`\nDevice charge/discharge scheduling\n[[04-schedule|→ PRD]]","x":-730,"y":190,"width":260,"height":120},
+		{"id":"pg-control","type":"text","text":"**Flex:Control**\n`flex-control.html`\nRemote device control\n[[05-control|→ PRD]]","x":-730,"y":330,"width":260,"height":120},
+		{"id":"pg-tariff","type":"text","text":"**Flex:Tariff**\n`flex-tariff.html`\nTariff analysis and optimisation\n[[06-tariff|→ PRD]]","x":-380,"y":50,"width":260,"height":120},
+		{"id":"pg-assure","type":"text","text":"**Flex:Assure**\n`flex-assure.html`\nSystem health and compliance monitoring\n[[07-assure|→ PRD]]","x":-380,"y":190,"width":260,"height":120},
+		{"id":"pg-simulator","type":"text","text":"**Flex:Simulator**\n`flex-simulator.html`\nScenario modelling and forecasting\n[[08-simulator|→ PRD]]","x":-380,"y":330,"width":260,"height":120},
+		{"id":"pg-insights","type":"text","text":"**Flex:Insights**\n`flex-insights.html`\nPortfolio analytics and reporting\n[[11-insights|→ PRD]]","x":-380,"y":470,"width":260,"height":120},
+		{"id":"pg-data-export","type":"text","text":"**Flex:DataExport**\n`flex-data-export.html`\nCSV / XLSX self-serve export\n[[09-data-export|→ PRD]]","x":-30,"y":50,"width":260,"height":120},
+		{"id":"title","type":"text","text":"# Flex Platform\nBlackcurrent energy portfolio management — NZ sites","x":-780,"y":-400,"width":360,"height":80,"color":"4"}
+	],
+	"edges":[
+		{"id":"e1","fromNode":"title","fromSide":"bottom","toNode":"pg-overview","toSide":"top"},
+		{"id":"e2","fromNode":"title","fromSide":"bottom","toNode":"pg-portfolio","toSide":"top"},
+		{"id":"e3","fromNode":"title","fromSide":"bottom","toNode":"pg-load-monitoring","toSide":"top"},
+		{"id":"e4","fromNode":"title","fromSide":"bottom","toNode":"pg-tariff","toSide":"top"},
+		{"id":"e5","fromNode":"title","fromSide":"bottom","toNode":"pg-data-export","toSide":"top"}
+	]
+}

@@ -60,6 +60,7 @@
     { group: 'Energy', items: [
       { nav: 'portfolio',        href: 'flex-portfolio.html',       icon: 'layers',            label: 'Portfolio' },
       { nav: 'portfolio-sites',  href: 'flex-portfolio-sites.html', icon: 'map-pin',           label: 'Portfolio — Sites' },
+      { nav: 'portfolio-map',   href: 'flex-portfolio-map.html',  icon: 'map',               label: 'Portfolio — Map' },
       { nav: 'energy-dashboard', href: 'flex-energy-dashboard.html',icon: 'zap',               label: 'Energy Dashboard' }
     ]},
     { group: 'Operate', items: [

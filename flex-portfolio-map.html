@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Portfolio — Map &mdash; Blackcurrent</title>
+
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('flex-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+  <script>try{var b=localStorage.getItem("flex-brand");if(b)document.documentElement.setAttribute("data-brand",b);}catch(e){}</script>
+
+  <link rel="stylesheet" href="assets/flex-platform.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    .page { padding: 0; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+    .main { display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Summary bar ────────────────────────────────────────────────── */
+    .map-summary {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 8px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .sum-item { display: flex; align-items: center; gap: 6px; }
+    .sum-item strong { color: var(--text); font-size: 13px; }
+    .sum-sep { width: 1px; height: 16px; background: var(--border); }
+    .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-dot.ok      { background: var(--status-ok); }
+    .status-dot.warn    { background: var(--status-warn); }
+    .status-dot.fault   { background: var(--status-fault); }
+    .status-dot.pending { background: var(--status-pending); }
+
+    /* ── Map ────────────────────────────────────────────────────────── */
+    #map { flex: 1; min-height: 0; z-index: 1; }
+
+    /* ── Popup ──────────────────────────────────────────────────────── */
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+      padding: 0;
+    }
+    .leaflet-popup-content { margin: 0; min-width: 240px; }
+    .map-popup { padding: 14px 16px; font-family: inherit; }
+    .map-popup-name {
+      font-size: 15px; font-weight: 700;
+      margin: 0 0 2px; color: #1a1a1a;
+    }
+    .map-popup-customer { font-size: 12px; color: #666; margin: 0 0 4px; }
+    .map-popup-address  { font-size: 12px; color: #666; margin: 0 0 10px; }
+    .map-popup-status {
+      display: inline-block;
+      padding: 2px 9px; border-radius: 10px;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .04em;
+      margin-bottom: 10px;
+    }
+    .map-popup-status.ok      { background: #e6f9f0; color: #1a7a46; }
+    .map-popup-status.warn    { background: #fff8e1; color: #9a6700; }
+    .map-popup-status.fault   { background: #fde8e8; color: #b71c1c; }
+    .map-popup-status.pending { background: #f0f0f0; color: #666; }
+    .map-popup-specs {
+      display: grid;
+      grid-template-columns: auto auto;
+      gap: 3px 16px;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .map-popup-specs dt { color: #888; }
+    .map-popup-specs dd { margin: 0; font-weight: 600; color: #1a1a1a; }
+    .map-popup-footer {
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px; color: #999;
+    }
+    .map-popup-link {
+      font-size: 12px; font-weight: 600;
+      color: var(--rust, #f47445);
+      text-decoration: none;
+    }
+    .map-popup-link:hover { text-decoration: underline; }
+
+    [data-theme="dark"] .map-popup-name { color: #f0f0f0; }
+    [data-theme="dark"] .map-popup-customer,
+    [data-theme="dark"] .map-popup-address { color: #aaa; }
+    [data-theme="dark"] .map-popup-specs dt { color: #888; }
+    [data-theme="dark"] .map-popup-specs dd { color: #f0f0f0; }
+    [data-theme="dark"] .map-popup-footer { border-top-color: #333; color: #666; }
+    [data-theme="dark"] .leaflet-popup-content-wrapper { background: #1e1e2e; }
+    [data-theme="dark"] .leaflet-popup-tip { background: #1e1e2e; }
+    [data-theme="dark"] .map-popup-status.ok      { background: #1a3d2b; color: #5dd99b; }
+    [data-theme="dark"] .map-popup-status.warn    { background: #3a2e00; color: #f5c842; }
+    [data-theme="dark"] .map-popup-status.fault   { background: #3a1010; color: #f78080; }
+    [data-theme="dark"] .map-popup-status.pending { background: #2a2a2a; color: #999; }
+  </style>
+</head>
+
+<body data-page="portfolio-map">
+
+<div class="frame">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <div class="app">
+
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <section class="main">
+
+      <div class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">PORTFOLIO / <strong>MAP</strong></div>
+        <div class="topbar-right">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+              <line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/>
+              <line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/>
+              <line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/>
+              <line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/>
+            </svg>
+          </button>
+          <div class="avatar">PU</div>
+        </div>
+      </div>
+
+      <main class="page">
+
+        <!-- Summary bar -->
+        <div class="map-summary">
+          <div class="sum-item"><strong id="sumTotal">—</strong> sites</div>
+          <div class="sum-sep"></div>
+          <div class="sum-item"><span class="status-dot ok"></span><strong id="sumOk">—</strong> ok</div>
+          <div class="sum-item"><span class="status-dot warn"></span><strong id="sumWarn">—</strong> warn</div>
+          <div class="sum-item"><span class="status-dot fault"></span><strong id="sumFault">—</strong> fault</div>
+          <div class="sum-item"><span class="status-dot pending"></span><strong id="sumPending">—</strong> pending</div>
+          <div class="sum-sep"></div>
+          <div class="sum-item">PV <strong id="sumPv">—</strong> kWp</div>
+          <div class="sum-item">Battery <strong id="sumBattery">—</strong> kWh</div>
+        </div>
+
+        <div id="map"></div>
+
+      </main>
+
+    </section>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="data/sites_and_customers.js"></script>
+<script src="assets/flex-nav.js"></script>
+<script src="assets/flex-platform.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var STATUS_COLOURS = {
+    ok:      '#22c55e',
+    warn:    '#f59e0b',
+    fault:   '#ef4444',
+    pending: '#94a3b8'
+  };
+
+  var allSites = (window.FlexData && window.FlexData.sites) ? window.FlexData.sites : [];
+  var sites = allSites.filter(function (s) { return s.latitude && s.longitude; });
+
+  /* ── Map ────────────────────────────────────────────────────────── */
+  var map = L.map('map').setView([-41.3, 172.6], 5);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  /* ── Popup content ──────────────────────────────────────────────── */
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function popup(site) {
+    var pv  = site.pv_size_kwp        ? site.pv_size_kwp + ' kWp'        : '—';
+    var bat = site.battery_capacity_kwh ? site.battery_capacity_kwh + ' kWh' : '—';
+    var inv = site.inverter_size_kw   ? site.inverter_size_kw + ' kW'   : '—';
+    var lr  = site.last_reading
+      ? (window.FlexUtil ? FlexUtil.formatDateTime(site.last_reading) : site.last_reading)
+      : '—';
+    return '<div class="map-popup">'
+      + '<p class="map-popup-name">'     + esc(site.name)          + '</p>'
+      + '<p class="map-popup-customer">' + esc(site.customer_name) + '</p>'
+      + '<p class="map-popup-address">'  + esc(site.address)       + '</p>'
+      + '<span class="map-popup-status ' + (site.status||'pending') + '">' + (site.status||'pending') + '</span>'
+      + '<dl class="map-popup-specs">'
+      + '<dt>Solar PV</dt><dd>'  + pv  + '</dd>'
+      + '<dt>Battery</dt><dd>'   + bat + '</dd>'
+      + '<dt>Inverter</dt><dd>'  + inv + '</dd>'
+      + '<dt>Sector</dt><dd>'    + esc(site.sector||'—') + '</dd>'
+      + '</dl>'
+      + '<div class="map-popup-footer">'
+      + '<span>Last reading: ' + lr + '</span>'
+      + '<a class="map-popup-link" href="flex-portfolio-sites.html">Open site &rarr;</a>'
+      + '</div>'
+      + '</div>';
+  }
+
+  /* ── Place markers ──────────────────────────────────────────────── */
+  sites.forEach(function (site) {
+    var colour = STATUS_COLOURS[site.status] || STATUS_COLOURS.pending;
+    L.circleMarker([site.latitude, site.longitude], {
+      radius: 7,
+      fillColor: colour,
+      color: '#fff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.85
+    })
+    .bindPopup(popup(site), { maxWidth: 300 })
+    .addTo(map);
+  });
+
+  /* ── Summary bar ────────────────────────────────────────────────── */
+  var counts = { ok: 0, warn: 0, fault: 0, pending: 0 };
+  var totalPv = 0, totalBat = 0;
+  sites.forEach(function (s) {
+    counts[s.status] = (counts[s.status] || 0) + 1;
+    totalPv  += (s.pv_size_kwp          || 0);
+    totalBat += (s.battery_capacity_kwh || 0);
+  });
+  document.getElementById('sumTotal').textContent   = sites.length;
+  document.getElementById('sumOk').textContent      = counts.ok      || 0;
+  document.getElementById('sumWarn').textContent    = counts.warn    || 0;
+  document.getElementById('sumFault').textContent   = counts.fault   || 0;
+  document.getElementById('sumPending').textContent = counts.pending || 0;
+  document.getElementById('sumPv').textContent      = Math.round(totalPv).toLocaleString();
+  document.getElementById('sumBattery').textContent = Math.round(totalBat).toLocaleString();
+
+})();
+</script>
+</body>
+</html>
