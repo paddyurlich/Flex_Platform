@@ -12,6 +12,7 @@ The public-facing module set is defined at [FlexPlatformSpotlight](https://paddy
 |---|---|---|---|---|
 | 01 | Portfolio | [01-portfolio.md](./01-portfolio.md) | *Landing view across all sites* | Implemented (prototype) |
 | 01b | Portfolio — Sites | [01b-portfolio-sites.md](./01b-portfolio-sites.md) | *Card view of all sites with asset and performance summary* | Implemented (prototype) |
+| 01c | Portfolio Map | [01c-portfolio-map.md](./01c-portfolio-map.md) | *Where are my assets and what is deployed across the portfolio?* | Planned |
 | 02 | Energy Dashboard | [02-energy-dashboard.md](./02-energy-dashboard.md) | *How is energy flowing through my site?* | Implemented (prototype) |
 | 03 | Flex:Load Monitoring | [03-load-monitoring.md](./03-load-monitoring.md) | *Is my supply healthy and balanced?* | Planned |
 | 04 | Flex:Schedule | [04-schedule.md](./04-schedule.md) | Give me simple control over how the system runs. | Planned |
