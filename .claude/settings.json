@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"\"' | { read -r f; echo \"$f\" | grep -qE '(flex-[^/]+\\.html|assets/flex-nav\\.js)$' && printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Page structure may have changed — check if docs/flex-platform-map.canvas needs updating.\"}}'; } 2>/dev/null || true",
+            "statusMessage": "Checking page structure…"
+          }
+        ]
+      }
+    ]
+  }
+}
