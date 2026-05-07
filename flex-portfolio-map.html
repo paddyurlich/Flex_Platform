@@ -10,8 +10,7 @@
       try {
         var stored = localStorage.getItem('flex-theme');
         var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        var theme = stored || (prefersDark ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-theme', stored || (prefersDark ? 'dark' : 'light'));
       } catch (e) {}
     })();
   </script>
@@ -21,95 +20,160 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    .page { padding: 0; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-    .main { display: flex; flex-direction: column; overflow: hidden; }
+    .page { padding: 0; }
+    #map  { display: block; width: 100%; }
 
-    /* ── Summary bar ────────────────────────────────────────────────── */
-    .map-summary {
+    /* ── Filter bar ─────────────────────────────────────────────────── */
+    .map-filters {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 6px;
       padding: 8px 16px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      font-size: 12px;
-      color: var(--text-muted);
     }
-    .sum-item { display: flex; align-items: center; gap: 6px; }
-    .sum-item strong { color: var(--text); font-size: 13px; }
-    .sum-sep { width: 1px; height: 16px; background: var(--border); }
+    .search-wrap {
+      position: relative;
+      flex: 0 0 200px;
+    }
+    .search-wrap svg {
+      position: absolute; left: 8px; top: 50%;
+      transform: translateY(-50%);
+      width: 13px; height: 13px;
+      stroke: var(--text-muted); pointer-events: none;
+    }
+    .search-wrap input {
+      width: 100%; height: 32px;
+      padding: 0 8px 0 28px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg); color: var(--text);
+      font-size: 13px; box-sizing: border-box;
+    }
+    .search-wrap input::placeholder { color: var(--text-muted); }
+    .search-wrap input:focus { outline: none; border-color: var(--rust); }
+
+    .map-filters select {
+      height: 32px; padding: 0 24px 0 9px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg); color: var(--text);
+      font-size: 13px; cursor: pointer; flex: 0 0 160px;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .map-filters select:focus { outline: none; border-color: var(--rust); }
+
+    .f-div { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+    .f-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: .04em; text-transform: uppercase;
+      color: var(--text-muted); white-space: nowrap; margin-right: 2px;
+    }
+    .chip-row { display: flex; gap: 4px; align-items: center; }
+    .chip {
+      height: 28px; padding: 0 11px;
+      border: 1px solid var(--border); border-radius: 14px;
+      background: transparent; color: var(--text-muted);
+      font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;
+      transition: background .12s, color .12s, border-color .12s;
+    }
+    .chip:hover { border-color: var(--rust); color: var(--text); }
+    .chip.active { background: var(--rust); border-color: var(--rust); color: #fff; }
+
+    .map-filters .spacer { flex: 1; }
+    .clear-btn {
+      height: 28px; padding: 0 12px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: transparent; color: var(--text-muted);
+      font-size: 12px; cursor: pointer; white-space: nowrap;
+      transition: color .12s, border-color .12s;
+    }
+    .clear-btn:hover { color: var(--rust); border-color: var(--rust); }
+
+    /* ── Summary bar ────────────────────────────────────────────────── */
+    .map-summary {
+      display: flex; align-items: center; gap: 16px;
+      padding: 6px 16px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      font-size: 12px; color: var(--text-muted);
+    }
+    .sum-item { display: flex; align-items: center; gap: 5px; }
+    .sum-item strong { color: var(--text); font-weight: 600; }
+    .s-div { width: 1px; height: 14px; background: var(--border); }
     .status-dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
+      width: 7px; height: 7px; border-radius: 50%;
+      display: inline-block; flex-shrink: 0;
     }
     .status-dot.ok      { background: var(--status-ok); }
     .status-dot.warn    { background: var(--status-warn); }
     .status-dot.fault   { background: var(--status-fault); }
     .status-dot.pending { background: var(--status-pending); }
 
-    /* ── Map ────────────────────────────────────────────────────────── */
-    #map { flex: 1; min-height: 0; z-index: 1; }
+    /* ── Site labels (permanent tooltips) ───────────────────────────── */
+    .site-label {
+      background: rgba(255,255,255,0.92) !important;
+      border: none !important;
+      border-radius: 3px !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,.18) !important;
+      padding: 2px 5px !important;
+      font-size: 10.5px !important;
+      font-weight: 600 !important;
+      color: #222 !important;
+      white-space: nowrap !important;
+      pointer-events: none !important;
+    }
+    /* Hide the tooltip arrow */
+    .site-label::before { display: none !important; }
+
+    [data-theme="dark"] .site-label {
+      background: rgba(30,30,46,0.92) !important;
+      color: #ddd !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,.5) !important;
+    }
 
     /* ── Popup ──────────────────────────────────────────────────────── */
     .leaflet-popup-content-wrapper {
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,.15);
-      padding: 0;
+      border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.15); padding: 0;
     }
     .leaflet-popup-content { margin: 0; min-width: 240px; }
     .map-popup { padding: 14px 16px; font-family: inherit; }
-    .map-popup-name {
-      font-size: 15px; font-weight: 700;
-      margin: 0 0 2px; color: #1a1a1a;
-    }
-    .map-popup-customer { font-size: 12px; color: #666; margin: 0 0 4px; }
-    .map-popup-address  { font-size: 12px; color: #666; margin: 0 0 10px; }
+    .map-popup-name { font-size: 15px; font-weight: 700; margin: 0 0 1px; color: #1a1a1a; }
+    .map-popup-customer { font-size: 12px; color: #777; margin: 0 0 3px; }
+    .map-popup-address  { font-size: 12px; color: #999; margin: 0 0 10px; }
     .map-popup-status {
-      display: inline-block;
-      padding: 2px 9px; border-radius: 10px;
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: .04em;
-      margin-bottom: 10px;
+      display: inline-block; padding: 2px 9px; border-radius: 10px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .04em; margin-bottom: 10px;
     }
     .map-popup-status.ok      { background: #e6f9f0; color: #1a7a46; }
     .map-popup-status.warn    { background: #fff8e1; color: #9a6700; }
     .map-popup-status.fault   { background: #fde8e8; color: #b71c1c; }
     .map-popup-status.pending { background: #f0f0f0; color: #666; }
     .map-popup-specs {
-      display: grid;
-      grid-template-columns: auto auto;
-      gap: 3px 16px;
-      font-size: 12px;
-      margin-bottom: 10px;
+      display: grid; grid-template-columns: auto auto;
+      gap: 4px 20px; font-size: 12px; margin-bottom: 10px;
     }
-    .map-popup-specs dt { color: #888; }
+    .map-popup-specs dt { color: #999; }
     .map-popup-specs dd { margin: 0; font-weight: 600; color: #1a1a1a; }
     .map-popup-footer {
-      border-top: 1px solid #eee;
-      padding-top: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 11px; color: #999;
+      border-top: 1px solid #eee; padding-top: 9px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; color: #bbb;
     }
     .map-popup-link {
       font-size: 12px; font-weight: 600;
-      color: var(--rust, #f47445);
-      text-decoration: none;
+      color: var(--rust, #f47445); text-decoration: none;
     }
     .map-popup-link:hover { text-decoration: underline; }
 
-    [data-theme="dark"] .map-popup-name { color: #f0f0f0; }
-    [data-theme="dark"] .map-popup-customer,
-    [data-theme="dark"] .map-popup-address { color: #aaa; }
-    [data-theme="dark"] .map-popup-specs dt { color: #888; }
+    [data-theme="dark"] .map-popup-name     { color: #f0f0f0; }
+    [data-theme="dark"] .map-popup-customer { color: #aaa; }
+    [data-theme="dark"] .map-popup-address  { color: #888; }
+    [data-theme="dark"] .map-popup-specs dt { color: #777; }
     [data-theme="dark"] .map-popup-specs dd { color: #f0f0f0; }
-    [data-theme="dark"] .map-popup-footer { border-top-color: #333; color: #666; }
+    [data-theme="dark"] .map-popup-footer   { border-top-color: #333; color: #555; }
     [data-theme="dark"] .leaflet-popup-content-wrapper { background: #1e1e2e; }
-    [data-theme="dark"] .leaflet-popup-tip { background: #1e1e2e; }
+    [data-theme="dark"] .leaflet-popup-tip             { background: #1e1e2e; }
     [data-theme="dark"] .map-popup-status.ok      { background: #1a3d2b; color: #5dd99b; }
     [data-theme="dark"] .map-popup-status.warn    { background: #3a2e00; color: #f5c842; }
     [data-theme="dark"] .map-popup-status.fault   { background: #3a1010; color: #f78080; }
@@ -122,17 +186,13 @@
 <div class="frame">
   <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
   <div class="app">
-
     <aside class="sidebar" id="sidebar"></aside>
-
     <section class="main">
 
       <div class="topbar">
         <button class="menu-btn" id="menuBtn" aria-label="Open menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square">
-            <line x1="4" y1="7" x2="20" y2="7"/>
-            <line x1="4" y1="12" x2="20" y2="12"/>
-            <line x1="4" y1="17" x2="20" y2="17"/>
+            <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
           </svg>
         </button>
         <div class="breadcrumb">PORTFOLIO / <strong>MAP</strong></div>
@@ -145,10 +205,8 @@
               <circle cx="12" cy="12" r="4"/>
               <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
               <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
-              <line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/>
-              <line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/>
-              <line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/>
-              <line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/>
+              <line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/>
+              <line x1="4.93" y1="19.07" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.07" y2="4.93"/>
             </svg>
           </button>
           <div class="avatar">PU</div>
@@ -157,23 +215,48 @@
 
       <main class="page">
 
+        <!-- Filter bar -->
+        <div class="map-filters" id="mapFilters">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search sites…" autocomplete="off" />
+          </div>
+          <select id="customerSelect"><option value="">All customers</option></select>
+          <div class="f-div"></div>
+          <span class="f-label">Type</span>
+          <div class="chip-row">
+            <button class="chip active" data-type="all">All</button>
+            <button class="chip" data-type="energy">Energy</button>
+            <button class="chip" data-type="climate">Climate</button>
+          </div>
+          <div class="f-div"></div>
+          <span class="f-label">Segment</span>
+          <div class="chip-row">
+            <button class="chip active" data-seg="all">All</button>
+            <button class="chip" data-seg="flex">Flex</button>
+            <button class="chip" data-seg="nonflex">Non-Flex</button>
+          </div>
+          <div class="spacer"></div>
+          <button class="clear-btn" id="clearFilters" hidden>Clear filters</button>
+        </div>
+
         <!-- Summary bar -->
         <div class="map-summary">
           <div class="sum-item"><strong id="sumTotal">—</strong> sites</div>
-          <div class="sum-sep"></div>
-          <div class="sum-item"><span class="status-dot ok"></span><strong id="sumOk">—</strong> ok</div>
-          <div class="sum-item"><span class="status-dot warn"></span><strong id="sumWarn">—</strong> warn</div>
-          <div class="sum-item"><span class="status-dot fault"></span><strong id="sumFault">—</strong> fault</div>
-          <div class="sum-item"><span class="status-dot pending"></span><strong id="sumPending">—</strong> pending</div>
-          <div class="sum-sep"></div>
+          <div class="s-div"></div>
+          <div class="sum-item"><span class="status-dot ok"></span><strong id="sumOk">—</strong></div>
+          <div class="sum-item"><span class="status-dot warn"></span><strong id="sumWarn">—</strong></div>
+          <div class="sum-item"><span class="status-dot fault"></span><strong id="sumFault">—</strong></div>
+          <div class="sum-item"><span class="status-dot pending"></span><strong id="sumPending">—</strong></div>
+          <div class="s-div"></div>
           <div class="sum-item">PV <strong id="sumPv">—</strong> kWp</div>
           <div class="sum-item">Battery <strong id="sumBattery">—</strong> kWh</div>
         </div>
 
         <div id="map"></div>
-
       </main>
-
     </section>
   </div>
 </div>
@@ -188,6 +271,9 @@
 (function () {
   'use strict';
 
+  var NZ_CENTER = [-41.3, 172.6];
+  var NZ_ZOOM   = 5;
+
   var STATUS_COLOURS = {
     ok:      '#22c55e',
     warn:    '#f59e0b',
@@ -195,78 +281,229 @@
     pending: '#94a3b8'
   };
 
+  /* ── Data ───────────────────────────────────────────────────────── */
   var allSites = (window.FlexData && window.FlexData.sites) ? window.FlexData.sites : [];
-  var sites = allSites.filter(function (s) { return s.latitude && s.longitude; });
+  var mappable = allSites.filter(function (s) { return s.latitude && s.longitude; });
+
+  function assetType(s) {
+    return (s.pv_size_kwp > 0 || s.has_battery) ? 'energy' : 'climate';
+  }
+
+  /* ── Customer dropdown ──────────────────────────────────────────── */
+  var customerSelect = document.getElementById('customerSelect');
+  var seen = {};
+  mappable.forEach(function (s) { seen[s.customer_id] = s.customer_name; });
+  Object.keys(seen).sort(function (a, b) {
+    return seen[a].localeCompare(seen[b]);
+  }).forEach(function (id) {
+    var o = document.createElement('option');
+    o.value = id; o.textContent = seen[id];
+    customerSelect.appendChild(o);
+  });
+
+  /* ── Map height ─────────────────────────────────────────────────── */
+  function setMapHeight() {
+    var used = ['.topbar', '#mapFilters', '.map-summary'].reduce(function (h, sel) {
+      var el = document.querySelector(sel);
+      return h + (el ? el.offsetHeight : 0);
+    }, 0);
+    document.getElementById('map').style.height = (window.innerHeight - used) + 'px';
+  }
+  setMapHeight();
 
   /* ── Map ────────────────────────────────────────────────────────── */
-  var map = L.map('map').setView([-41.3, 172.6], 5);
-
+  var map = L.map('map').setView(NZ_CENTER, NZ_ZOOM);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19
+    subdomains: 'abcd', maxZoom: 19
   }).addTo(map);
 
-  /* ── Popup content ──────────────────────────────────────────────── */
-  function esc(str) {
-    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  window.addEventListener('resize', function () { setMapHeight(); map.invalidateSize(); });
+
+  var markersGroup = L.featureGroup().addTo(map);
+  var activeMarkers = []; // track to access tooltips for collision detection
+
+  /* ── Label collision detection ──────────────────────────────────── */
+  var collisionTimer = null;
+
+  function scheduleCollision() {
+    clearTimeout(collisionTimer);
+    collisionTimer = setTimeout(detectCollisions, 80);
+  }
+
+  function detectCollisions() {
+    /* Reset all labels to visible, then greedily suppress overlaps */
+    activeMarkers.forEach(function (m) {
+      var t = m.getTooltip();
+      if (t && t.getElement()) t.getElement().style.visibility = 'visible';
+    });
+
+    var accepted = []; /* list of DOMRect for accepted labels */
+
+    activeMarkers.forEach(function (m) {
+      var t = m.getTooltip();
+      if (!t) return;
+      var el = t.getElement();
+      if (!el) return;
+
+      var rect = el.getBoundingClientRect();
+      /* Skip zero-size elements (not yet rendered) */
+      if (!rect.width) return;
+
+      var pad = 3; /* px gap between labels */
+      var overlaps = accepted.some(function (r) {
+        return !(rect.right  + pad < r.left  ||
+                 r.right     + pad < rect.left ||
+                 rect.bottom + pad < r.top   ||
+                 r.bottom    + pad < rect.top);
+      });
+
+      if (overlaps) {
+        el.style.visibility = 'hidden';
+      } else {
+        accepted.push(rect);
+      }
+    });
+  }
+
+  /* Re-run after zoom and pan so labels reflect new screen positions */
+  map.on('zoomend', scheduleCollision);
+  map.on('moveend', scheduleCollision);
+
+  /* ── Popup ──────────────────────────────────────────────────────── */
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   function popup(site) {
-    var pv  = site.pv_size_kwp        ? site.pv_size_kwp + ' kWp'        : '—';
+    var pv  = site.pv_size_kwp         ? site.pv_size_kwp + ' kWp'         : '—';
     var bat = site.battery_capacity_kwh ? site.battery_capacity_kwh + ' kWh' : '—';
-    var inv = site.inverter_size_kw   ? site.inverter_size_kw + ' kW'   : '—';
-    var lr  = site.last_reading
-      ? (window.FlexUtil ? FlexUtil.formatDateTime(site.last_reading) : site.last_reading)
-      : '—';
+    var inv = site.inverter_size_kw    ? site.inverter_size_kw + ' kW'    : '—';
     return '<div class="map-popup">'
       + '<p class="map-popup-name">'     + esc(site.name)          + '</p>'
       + '<p class="map-popup-customer">' + esc(site.customer_name) + '</p>'
       + '<p class="map-popup-address">'  + esc(site.address)       + '</p>'
       + '<span class="map-popup-status ' + (site.status||'pending') + '">' + (site.status||'pending') + '</span>'
       + '<dl class="map-popup-specs">'
-      + '<dt>Solar PV</dt><dd>'  + pv  + '</dd>'
-      + '<dt>Battery</dt><dd>'   + bat + '</dd>'
-      + '<dt>Inverter</dt><dd>'  + inv + '</dd>'
-      + '<dt>Sector</dt><dd>'    + esc(site.sector||'—') + '</dd>'
+      + '<dt>Solar PV</dt><dd>' + pv  + '</dd>'
+      + '<dt>Battery</dt><dd>'  + bat + '</dd>'
+      + '<dt>Inverter</dt><dd>' + inv + '</dd>'
+      + '<dt>Sector</dt><dd>'   + esc(site.sector||'—') + '</dd>'
       + '</dl>'
       + '<div class="map-popup-footer">'
-      + '<span>Last reading: ' + lr + '</span>'
+      + '<span>Last reading: ' + esc(site.last_reading||'—') + '</span>'
       + '<a class="map-popup-link" href="flex-portfolio-sites.html">Open site &rarr;</a>'
-      + '</div>'
-      + '</div>';
+      + '</div></div>';
   }
 
-  /* ── Place markers ──────────────────────────────────────────────── */
-  sites.forEach(function (site) {
-    var colour = STATUS_COLOURS[site.status] || STATUS_COLOURS.pending;
-    L.circleMarker([site.latitude, site.longitude], {
-      radius: 7,
-      fillColor: colour,
-      color: '#fff',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.85
-    })
-    .bindPopup(popup(site), { maxWidth: 300 })
-    .addTo(map);
+  /* ── Filter state ───────────────────────────────────────────────── */
+  var filters = { search: '', type: 'all', customer: '', segment: 'all' };
+
+  function isFiltered() {
+    return !!(filters.search || filters.type !== 'all' || filters.customer || filters.segment !== 'all');
+  }
+
+  /* ── Render ─────────────────────────────────────────────────────── */
+  function render() {
+    markersGroup.clearLayers();
+    activeMarkers = [];
+    var visible = [];
+    var search = filters.search.toLowerCase();
+
+    mappable.forEach(function (site) {
+      if (search) {
+        var hay = site.name.toLowerCase() + ' '
+          + (site.address || '').toLowerCase() + ' '
+          + (site.customer_name || '').toLowerCase();
+        if (hay.indexOf(search) === -1) return;
+      }
+      if (filters.type !== 'all' && assetType(site) !== filters.type) return;
+      if (filters.customer && String(site.customer_id) !== filters.customer) return;
+      if (filters.segment === 'flex'    && !site.active_flex) return;
+      if (filters.segment === 'nonflex' &&  site.active_flex) return;
+
+      visible.push(site);
+
+      var colour = STATUS_COLOURS[site.status] || STATUS_COLOURS.pending;
+      var marker = L.circleMarker([site.latitude, site.longitude], {
+        radius: 7, fillColor: colour,
+        color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.85
+      });
+      marker.bindPopup(popup(site), { maxWidth: 300 });
+      marker.bindTooltip(esc(site.name), {
+        permanent:  true,
+        direction:  'right',
+        offset:     [10, 0],
+        className:  'site-label'
+      });
+      marker.addTo(markersGroup);
+      activeMarkers.push(marker);
+    });
+
+    /* Zoom to filtered results */
+    if (isFiltered() && visible.length > 0) {
+      var bounds = markersGroup.getBounds();
+      if (visible.length === 1) {
+        map.setView(bounds.getCenter(), 13);
+      } else {
+        map.fitBounds(bounds, { padding: [48, 48], maxZoom: 13 });
+      }
+    } else if (!isFiltered()) {
+      map.setView(NZ_CENTER, NZ_ZOOM);
+    }
+
+    /* Summary */
+    var counts = { ok: 0, warn: 0, fault: 0, pending: 0 };
+    var pv = 0, bat = 0;
+    visible.forEach(function (s) {
+      counts[s.status] = (counts[s.status] || 0) + 1;
+      pv  += (s.pv_size_kwp          || 0);
+      bat += (s.battery_capacity_kwh || 0);
+    });
+    document.getElementById('sumTotal').textContent   = visible.length;
+    document.getElementById('sumOk').textContent      = counts.ok      || 0;
+    document.getElementById('sumWarn').textContent    = counts.warn    || 0;
+    document.getElementById('sumFault').textContent   = counts.fault   || 0;
+    document.getElementById('sumPending').textContent = counts.pending || 0;
+    document.getElementById('sumPv').textContent      = Math.round(pv).toLocaleString();
+    document.getElementById('sumBattery').textContent = Math.round(bat).toLocaleString();
+    document.getElementById('clearFilters').hidden = !isFiltered();
+
+    /* Run collision detection after Leaflet has positioned the tooltips */
+    scheduleCollision();
+  }
+
+  /* ── Filter events ──────────────────────────────────────────────── */
+  document.getElementById('searchInput').addEventListener('input', function () {
+    filters.search = this.value.trim(); render();
+  });
+  customerSelect.addEventListener('change', function () {
+    filters.customer = this.value; render();
+  });
+  document.querySelectorAll('[data-type]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('[data-type]').forEach(function (b) { b.classList.remove('active'); });
+      this.classList.add('active'); filters.type = this.dataset.type; render();
+    });
+  });
+  document.querySelectorAll('[data-seg]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('[data-seg]').forEach(function (b) { b.classList.remove('active'); });
+      this.classList.add('active'); filters.segment = this.dataset.seg; render();
+    });
+  });
+  document.getElementById('clearFilters').addEventListener('click', function () {
+    filters = { search: '', type: 'all', customer: '', segment: 'all' };
+    document.getElementById('searchInput').value = '';
+    customerSelect.value = '';
+    document.querySelectorAll('[data-type]').forEach(function (b) { b.classList.remove('active'); });
+    document.querySelector('[data-type="all"]').classList.add('active');
+    document.querySelectorAll('[data-seg]').forEach(function (b) { b.classList.remove('active'); });
+    document.querySelector('[data-seg="all"]').classList.add('active');
+    render();
   });
 
-  /* ── Summary bar ────────────────────────────────────────────────── */
-  var counts = { ok: 0, warn: 0, fault: 0, pending: 0 };
-  var totalPv = 0, totalBat = 0;
-  sites.forEach(function (s) {
-    counts[s.status] = (counts[s.status] || 0) + 1;
-    totalPv  += (s.pv_size_kwp          || 0);
-    totalBat += (s.battery_capacity_kwh || 0);
-  });
-  document.getElementById('sumTotal').textContent   = sites.length;
-  document.getElementById('sumOk').textContent      = counts.ok      || 0;
-  document.getElementById('sumWarn').textContent    = counts.warn    || 0;
-  document.getElementById('sumFault').textContent   = counts.fault   || 0;
-  document.getElementById('sumPending').textContent = counts.pending || 0;
-  document.getElementById('sumPv').textContent      = Math.round(totalPv).toLocaleString();
-  document.getElementById('sumBattery').textContent = Math.round(totalBat).toLocaleString();
+  render();
 
 })();
 </script>
