@@ -284,12 +284,17 @@
     [data-theme="dark"] .ov-clock           { color: #e8e3d6; }
     [data-theme="dark"] .donut-pct          { color: #e8e3d6; }
 
-    /* ── Ember brand dark mode — replace hardcoded orange with yellow ──── */
-    [data-brand="ember"][data-theme="dark"] .hero-tile.t-rust .hero-value { color: #f2c300; }
-    [data-brand="ember"][data-theme="dark"] .att-table th     { border-bottom-color: #f2c300; }
-    [data-brand="ember"][data-theme="dark"] .att-table tr:hover td { background: rgba(242,195,0,0.05); }
-    [data-brand="ember"][data-theme="dark"] .sec-table th     { border-bottom-color: #f2c300; }
-    [data-brand="ember"][data-theme="dark"] .ov-head          { border-bottom-color: #f2c300; }
+    /* ── Ember / uLoop & ember brand dark mode — replace orange with yellow */
+    [data-brand="ember"][data-theme="dark"] .hero-tile.t-rust .hero-value,
+    [data-brand="uloop-ember"][data-theme="dark"] .hero-tile.t-rust .hero-value { color: #f2c300; }
+    [data-brand="ember"][data-theme="dark"] .att-table th,
+    [data-brand="uloop-ember"][data-theme="dark"] .att-table th     { border-bottom-color: #f2c300; }
+    [data-brand="ember"][data-theme="dark"] .att-table tr:hover td,
+    [data-brand="uloop-ember"][data-theme="dark"] .att-table tr:hover td { background: rgba(242,195,0,0.05); }
+    [data-brand="ember"][data-theme="dark"] .sec-table th,
+    [data-brand="uloop-ember"][data-theme="dark"] .sec-table th     { border-bottom-color: #f2c300; }
+    [data-brand="ember"][data-theme="dark"] .ov-head,
+    [data-brand="uloop-ember"][data-theme="dark"] .ov-head          { border-bottom-color: #f2c300; }
 
     /* ── Responsive ────────────────────────────────────────────────────── */
     @media (max-width: 1280px) {

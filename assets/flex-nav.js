@@ -88,10 +88,18 @@
     + LOGO_BC
     + '<button class="sidebar-close" id="sidebarClose" aria-label="Close menu">&times;</button>'
     + '</div>'
-    /* Ember Labs logo (Logo 1 Name.svg — icon grid + wordmark) */
+    /* Ember Labs logo */
     + '<div class="logo logo-ember" aria-label="ember labs">'
     + LOGO_EMBER
     + '<button class="sidebar-close" id="sidebarCloseEmber" aria-label="Close menu">&times;</button>'
+    + '</div>'
+    /* uLoop & ember logo — Ember wordmark + uLoop logo stacked */
+    + '<div class="logo logo-uloop-ember" aria-label="uloop and ember labs">'
+    + '<div class="uloop-ember-logos">'
+    + LOGO_EMBER
+    + '<img src="assets/uloop-logo.png" class="uloop-logo" alt="uLoop" />'
+    + '</div>'
+    + '<button class="sidebar-close" id="sidebarCloseUloop" aria-label="Close menu">&times;</button>'
     + '</div>'
     + '<div class="product-tag"><span>Flex</span> &nbsp;Platform</div>';
 
@@ -109,11 +117,13 @@
   });
 
   /* Brand switcher at bottom of nav */
-  var bcActive   = currentBrand !== 'ember' ? ' active active-bc'    : ' active-bc';
-  var emlActive  = currentBrand === 'ember' ? ' active active-ember'  : ' active-ember';
+  var bcActive    = currentBrand === 'blackcurrent' ? ' active active-bc'    : ' active-bc';
+  var emlActive   = currentBrand === 'ember'        ? ' active active-ember'  : ' active-ember';
+  var uloopActive = currentBrand === 'uloop-ember'  ? ' active active-uloop'  : ' active-uloop';
   html += '<div class="brand-switcher">'
-    + '<button class="brand-btn' + bcActive  + '" id="brandBtnBc">Blackcurrent</button>'
-    + '<button class="brand-btn' + emlActive + '" id="brandBtnEmber">Ember</button>'
+    + '<button class="brand-btn' + bcActive    + '" id="brandBtnBc">Blackcurrent</button>'
+    + '<button class="brand-btn' + emlActive   + '" id="brandBtnEmber">Ember</button>'
+    + '<button class="brand-btn' + uloopActive + '" id="brandBtnUloop">uLoop &amp; ember</button>'
     + '</div>';
 
   var sidebar = document.getElementById('sidebar');
@@ -128,21 +138,23 @@
 
     var btnBc    = document.getElementById('brandBtnBc');
     var btnEmber = document.getElementById('brandBtnEmber');
-    if (btnBc && btnEmber) {
-      btnBc.className    = 'brand-btn' + (brand !== 'ember' ? ' active active-bc'   : ' active-bc');
-      btnEmber.className = 'brand-btn' + (brand === 'ember' ? ' active active-ember' : ' active-ember');
-    }
+    var btnUloop = document.getElementById('brandBtnUloop');
+    if (btnBc)    btnBc.className    = 'brand-btn' + (brand === 'blackcurrent' ? ' active active-bc'    : ' active-bc');
+    if (btnEmber) btnEmber.className = 'brand-btn' + (brand === 'ember'        ? ' active active-ember'  : ' active-ember');
+    if (btnUloop) btnUloop.className = 'brand-btn' + (brand === 'uloop-ember'  ? ' active active-uloop'  : ' active-uloop');
   }
 
   var btnBc    = document.getElementById('brandBtnBc');
   var btnEmber = document.getElementById('brandBtnEmber');
+  var btnUloop = document.getElementById('brandBtnUloop');
   if (btnBc)    btnBc.addEventListener('click',    function () { setBrand('blackcurrent'); });
   if (btnEmber) btnEmber.addEventListener('click', function () { setBrand('ember'); });
+  if (btnUloop) btnUloop.addEventListener('click', function () { setBrand('uloop-ember'); });
 
-  /* Wire up the Ember close button to the same handler as the BC one */
-  var closeEmber = document.getElementById('sidebarCloseEmber');
+  /* Wire up alternate close buttons to the main BC close handler */
   var closeBC    = document.getElementById('sidebarClose');
-  if (closeEmber && closeBC) {
-    closeEmber.addEventListener('click', function () { closeBC.click(); });
-  }
+  var closeEmber = document.getElementById('sidebarCloseEmber');
+  var closeUloop = document.getElementById('sidebarCloseUloop');
+  if (closeEmber && closeBC) closeEmber.addEventListener('click', function () { closeBC.click(); });
+  if (closeUloop && closeBC) closeUloop.addEventListener('click', function () { closeBC.click(); });
 })();
