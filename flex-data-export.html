@@ -83,6 +83,7 @@
           </div>
           <div class="card-body">
             <div class="form-grid">
+
               <div class="field">
                 <label for="device">Device</label>
                 <select class="select" id="device">
@@ -91,15 +92,17 @@
                   <option value="Submeter B — Cool store">Submeter B &mdash; Cool store</option>
                   <option value="Submeter C — Workshop">Submeter C &mdash; Workshop</option>
                 </select>
-                <div class="helper">Single device per export. Multi-device coming later.</div>
+                <div class="helper">Single device per export.</div>
               </div>
 
               <div class="field">
-                <label>Resolution</label>
-                <select class="select" disabled style="opacity:.7">
-                  <option>30 minutes &mdash; interval ending</option>
+                <label for="resolution">Resolution</label>
+                <select class="select" id="resolution">
+                  <option value="30m">30 minutes &mdash; interval ending</option>
+                  <option value="1h">Hourly &mdash; hour ending</option>
+                  <option value="1d">Daily</option>
                 </select>
-                <div class="helper">Fixed in v1. Matches NZ EIEP convention.</div>
+                <div class="helper">30-minute native data aggregated to the selected interval.</div>
               </div>
 
               <div class="field span-2">
@@ -117,32 +120,20 @@
                 </div>
                 <div class="presets" id="presets">
                   <span class="preset" data-preset="30d">Last 30 days</span>
-                  <span class="preset" data-preset="12m">Last 12 months</span>
-                  <span class="preset" data-preset="ytd">YTD</span>
-                  <span class="preset active" data-preset="all">From service commencement</span>
+                  <span class="preset" data-preset="3m">Last 3 months</span>
+                  <span class="preset active" data-preset="ytd">YTD</span>
                 </div>
-                <div class="helper"><strong>Service commencement:</strong> <span id="commencementLabel">01 Jun 2023</span>. Earliest selectable date.</div>
+                <div class="helper" id="rangeHelper"><strong>Tip:</strong> Keep requests under 3 months for fastest download. For longer periods, export in batches.</div>
               </div>
 
               <div class="field span-2">
                 <label>Format</label>
-                <div class="radios" id="formatRadios">
-                  <div class="radio selected" data-format="csv">
-                    <div class="dot-outer"></div>
-                    <div class="label-block">
-                      <div class="name">CSV</div>
-                      <div class="desc">Comma-delimited, dot decimal. Best for Excel and downstream tools.</div>
-                    </div>
-                  </div>
-                  <div class="radio" data-format="xlsx">
-                    <div class="dot-outer"></div>
-                    <div class="label-block">
-                      <div class="name">XLSX</div>
-                      <div class="desc">Excel workbook with metadata sheet.</div>
-                    </div>
-                  </div>
+                <div class="format-fixed">
+                  <span class="format-badge">CSV</span>
+                  <span class="format-note">Comma-delimited, dot decimal &mdash; compatible with Excel and all data tools.</span>
                 </div>
               </div>
+
             </div>
 
             <div class="actions">
@@ -160,7 +151,7 @@
           <div class="card-body" id="previewBody">
             <div class="preview-empty" id="previewEmpty">
               <div class="big">Click Preview to generate</div>
-              <div>Confirm device, range and format above, then preview the file before downloading.</div>
+              <div>Confirm device, range and resolution above, then preview the file before downloading.</div>
             </div>
             <div id="previewContent" class="hidden">
               <div class="stale-banner" id="staleBanner">Selections changed &mdash; click Preview to refresh.</div>
@@ -169,10 +160,10 @@
 
               <div class="table-wrap">
                 <table class="preview">
-                  <thead>
+                  <thead id="previewThead">
                     <tr>
-                      <th>Interval Ending</th>
-                      <th>Offset</th>
+                      <th id="colTimestamp">Interval Ending</th>
+                      <th id="colOffset">Offset</th>
                       <th class="num">Import (kWh)</th>
                       <th class="num">Export (kWh)</th>
                       <th class="num">Consumption (kWh)</th>
@@ -186,48 +177,10 @@
               </div>
 
               <div class="actions">
-                <button class="btn primary" id="downloadBtn">Download <span id="downloadFormat">CSV</span> <span class="arrow">&darr;</span></button>
+                <button class="btn primary" id="downloadBtn">Download CSV <span class="arrow">&darr;</span></button>
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- ============== Recent ============== -->
-        <div class="recent">
-          <div class="recent-head">Recent Exports</div>
-          <table>
-            <thead>
-              <tr>
-                <th>Generated</th>
-                <th>Device</th>
-                <th>Range</th>
-                <th>Format</th>
-                <th>Rows</th>
-                <th>By</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="recentTbody">
-              <tr>
-                <td>02 Apr 2026 &middot; 16:42</td>
-                <td>Submeter A &mdash; Irrigation pump</td>
-                <td>01 Jan 2026 &rarr; 31 Mar 2026</td>
-                <td>XLSX</td>
-                <td>4,368</td>
-                <td>Paddy Urlich</td>
-                <td><a>Download &darr;</a></td>
-              </tr>
-              <tr>
-                <td>14 Mar 2026 &middot; 11:08</td>
-                <td>Main Energy</td>
-                <td>01 Mar 2025 &rarr; 28 Feb 2026</td>
-                <td>CSV</td>
-                <td>17,520</td>
-                <td>Matt Strik</td>
-                <td><a>Download &darr;</a></td>
-              </tr>
-            </tbody>
-          </table>
         </div>
 
       </main>
@@ -235,48 +188,67 @@
   </div>
 </div>
 
+<style>
+  /* ── Format fixed display ─────────────────────────────── */
+  .format-fixed {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg-2, rgba(0,0,0,0.04));
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  .format-badge {
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    background: var(--rust); color: var(--charcoal);
+    padding: 3px 8px; border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .format-note { font-size: 13px; color: var(--muted); }
+
+  /* ── Range warning ────────────────────────────────────── */
+  .helper.warn { color: #c05a00; }
+  [data-theme="dark"] .helper.warn { color: #f5a05a; }
+</style>
+
 <script src="https://unpkg.com/lucide/dist/umd/lucide.min.js"></script>
 <script src="assets/flex-nav.js"></script>
 <script src="assets/flex-platform.js"></script>
 <script>
-// =====================================================
-// Flex:DataExport — page-specific behaviour
-// Uses FlexUtil from flex-platform.js for shared formatters.
-// =====================================================
 (function () {
   'use strict';
 
   var U = window.FlexUtil;
 
   // ---------- constants ----------
-  var SITE_NAME = "Forest Lodge";
-  var SITE_ICP = "0001234567ABC9";
-  var USER_NAME = "Paddy Urlich";
-  var USER_EMAIL = "paddy@blackcurrent.io";
-  var COMMENCEMENT = new Date(2023, 5, 1); // 01 Jun 2023
-  var HALF_HOUR_MS = 30 * 60 * 1000;
-  var HEAD_ROWS = 5;
-  var TAIL_ROWS = 5;
+  var SITE_NAME       = "Forest Lodge";
+  var SITE_ICP        = "0001234567ABC9";
+  var USER_EMAIL      = "paddy@blackcurrent.io";
+  var COMMENCEMENT    = new Date(2023, 5, 1);
+  var HALF_HOUR_MS    = 30 * 60 * 1000;
+  var HEAD_ROWS       = 5;
+  var TAIL_ROWS       = 5;
+  var THREE_MONTHS_MS = 92 * 24 * 60 * 60 * 1000;
+
+  var RESOLUTIONS = {
+    '30m': { ms: HALF_HOUR_MS,           label: '30 minutes — interval ending', colHead: 'Interval Ending', showOffset: true,  multiplier: 1  },
+    '1h':  { ms: 60 * 60 * 1000,         label: 'Hourly — hour ending',         colHead: 'Hour Ending',     showOffset: true,  multiplier: 2  },
+    '1d':  { ms: 24 * 60 * 60 * 1000,   label: 'Daily',                         colHead: 'Date',            showOffset: false, multiplier: 48 }
+  };
 
   // ---------- state ----------
   var state = {
-    device: "Main Energy",
-    fromDate: new Date(2023, 5, 1),
-    toDate: new Date(2026, 3, 28, 23, 30, 0),
-    format: "csv",
-    preset: "all",
-    preview: null,
-    previewStale: false,
+    device:        "Main Energy",
+    fromDate:      new Date(2026, 0, 1),
+    toDate:        new Date(2026, 3, 28, 23, 30, 0),
+    resolution:    '30m',
+    preset:        'ytd',
+    preview:       null,
+    previewStale:  false,
   };
 
-  function dmyMonths(d) {
-    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return U.pad(d.getDate()) + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
-  }
-  function fmtKwh(x) { return x === '' ? '' : Number(x).toFixed(3); }
-
-  function genInterval(date, device) {
-    var isSubmeter = device !== 'Main Energy';
+  // ---------- data generation ----------
+  function genInterval(date, device, multiplier) {
     var rand = U.seedRng(date.getTime());
     var hour = date.getHours() + date.getMinutes() / 60;
     var dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000);
@@ -287,104 +259,97 @@
       var x = (hour - 12.5) / 4;
       genKwh = 4.8 * Math.exp(-x * x) * seasonal * (0.85 + rand() * 0.3);
     }
-
     var consKwh = 1.1 + rand() * 0.4;
-    if (hour >= 7 && hour <= 9) consKwh += 0.9 * Math.exp(-Math.pow((hour - 8) / 1, 2));
+    if (hour >= 7  && hour <= 9)  consKwh += 0.9 * Math.exp(-Math.pow((hour -  8) / 1.0, 2));
     if (hour >= 17 && hour <= 21) consKwh += 1.6 * Math.exp(-Math.pow((hour - 19) / 1.5, 2));
 
     var r = rand();
-    var quality = 'Actual';
-    if (r > 0.998) quality = 'Missing';
-    else if (r > 0.985) quality = 'Estimated';
+    var quality = r > 0.998 ? 'Missing' : r > 0.985 ? 'Estimated' : 'Actual';
 
+    var isSubmeter = device !== 'Main Energy';
     if (isSubmeter) {
       var factor = 0.3;
-      if (device.indexOf('Irrigation') !== -1) {
-        factor = (hour >= 4 && hour <= 7) ? 4.5 + rand() * 1.5 : 0.04 + rand() * 0.05;
-      } else if (device.indexOf('Cool store') !== -1) {
-        factor = 0.55 + rand() * 0.25;
-      } else if (device.indexOf('Workshop') !== -1) {
-        factor = (hour >= 8 && hour <= 17) ? 0.6 + rand() * 0.4 : 0.05 + rand() * 0.05;
-      }
-      var value = consKwh * factor;
-      return {
-        timestamp: U.ymdhm(date),
-        offset: U.nzOffset(date),
-        importE: '', exportE: '',
-        consumption: U.round3(value),
-        generation: '',
-        quality: quality, device: device,
-        missing: quality === 'Missing'
-      };
+      if      (device.indexOf('Irrigation') !== -1) factor = (hour >= 4 && hour <= 7) ? 4.5 + rand() * 1.5 : 0.04 + rand() * 0.05;
+      else if (device.indexOf('Cool store') !== -1) factor = 0.55 + rand() * 0.25;
+      else if (device.indexOf('Workshop')   !== -1) factor = (hour >= 8 && hour <= 17) ? 0.6 + rand() * 0.4 : 0.05 + rand() * 0.05;
+      var val = U.round3(consKwh * factor * multiplier);
+      return { timestamp: date, importE: '', exportE: '', consumption: val, generation: '', quality: quality, device: device };
     }
 
     var net = consKwh - genKwh;
     return {
-      timestamp: U.ymdhm(date),
-      offset: U.nzOffset(date),
-      importE: U.round3(Math.max(net, 0)),
-      exportE: U.round3(Math.max(-net, 0)),
-      consumption: U.round3(consKwh),
-      generation: U.round3(genKwh),
-      quality: quality, device: device,
-      missing: quality === 'Missing'
+      timestamp:   date,
+      importE:     U.round3(Math.max(net,  0) * multiplier),
+      exportE:     U.round3(Math.max(-net, 0) * multiplier),
+      consumption: U.round3(consKwh * multiplier),
+      generation:  U.round3(genKwh  * multiplier),
+      quality:     quality,
+      device:      device
     };
   }
 
-  function intervalCount(from, to) {
-    return Math.max(0, Math.floor((to.getTime() - from.getTime()) / HALF_HOUR_MS) + 1);
+  function intervalCount() {
+    var res = RESOLUTIONS[state.resolution];
+    return Math.max(0, Math.floor((state.toDate.getTime() - state.fromDate.getTime()) / res.ms) + 1);
   }
 
   function generatePreviewData() {
+    var res = RESOLUTIONS[state.resolution];
     var startMs = state.fromDate.getTime();
-    var total = intervalCount(state.fromDate, state.toDate);
+    var total = intervalCount();
+
+    function makeRow(i) {
+      return genInterval(new Date(startMs + (i + 1) * res.ms), state.device, res.multiplier);
+    }
 
     var headRows = [];
-    for (var i = 0; i < Math.min(HEAD_ROWS, total); i++) {
-      var t = new Date(startMs + (i + 1) * HALF_HOUR_MS);
-      headRows.push(genInterval(t, state.device));
-    }
+    for (var i = 0; i < Math.min(HEAD_ROWS, total); i++) headRows.push(makeRow(i));
 
     var tailRows = [];
     if (total > HEAD_ROWS + TAIL_ROWS) {
-      for (var j = total - TAIL_ROWS; j < total; j++) {
-        var t2 = new Date(startMs + (j + 1) * HALF_HOUR_MS);
-        tailRows.push(genInterval(t2, state.device));
-      }
+      for (var j = total - TAIL_ROWS; j < total; j++) tailRows.push(makeRow(j));
     }
 
-    return {
-      totalRows: total,
-      headRows: headRows,
-      tailRows: tailRows
-    };
+    return { totalRows: total, headRows: headRows, tailRows: tailRows };
   }
 
   // ---------- UI helpers ----------
+  function fmtTimestamp(date) {
+    return state.resolution === '1d' ? U.ymd(date) : U.ymdhm(date);
+  }
+
+  function updateRangeWarning() {
+    var helper = document.getElementById('rangeHelper');
+    var rangems = state.toDate.getTime() - state.fromDate.getTime();
+    if (rangems > THREE_MONTHS_MS) {
+      helper.className = 'helper warn';
+      helper.innerHTML = '<strong>Large request:</strong> This range may be slow to download. Consider exporting in 3-month batches.';
+    } else {
+      helper.className = 'helper';
+      helper.innerHTML = '<strong>Tip:</strong> Keep requests under 3 months for fastest download. For longer periods, export in batches.';
+    }
+  }
+
   function setPreset(preset) {
     state.preset = preset;
     document.querySelectorAll('.preset').forEach(function (p) {
       p.classList.toggle('active', p.dataset.preset === preset);
     });
     var from, to;
+    to = new Date(2026, 3, 28, 23, 30);
     if (preset === '30d') {
-      to = new Date(2026, 3, 28, 23, 30);
-      from = new Date(to); from.setDate(from.getDate() - 30); from.setHours(0,0,0,0);
-    } else if (preset === '12m') {
-      to = new Date(2026, 3, 28, 23, 30);
-      from = new Date(to); from.setFullYear(from.getFullYear() - 1); from.setHours(0,0,0,0);
-    } else if (preset === 'ytd') {
-      from = new Date(2026, 0, 1);
-      to = new Date(2026, 3, 28, 23, 30);
+      from = new Date(to); from.setDate(from.getDate() - 30); from.setHours(0, 0, 0, 0);
+    } else if (preset === '3m') {
+      from = new Date(to); from.setMonth(from.getMonth() - 3); from.setHours(0, 0, 0, 0);
     } else {
-      from = new Date(COMMENCEMENT);
-      to = new Date(2026, 3, 28, 23, 30);
+      from = new Date(2026, 0, 1);
     }
     state.fromDate = from;
     state.toDate = to;
     document.getElementById('fromDate').value = U.ymd(from);
     document.getElementById('toDate').value = U.ymd(to);
     markStale();
+    updateRangeWarning();
   }
 
   function markStale() {
@@ -395,82 +360,96 @@
   }
 
   function renderPreview() {
+    var res = RESOLUTIONS[state.resolution];
     var p = generatePreviewData();
     state.preview = p;
     state.previewStale = false;
     document.getElementById('staleBanner').classList.remove('show');
 
+    // Update table column header to match resolution
+    document.getElementById('colTimestamp').textContent = res.colHead;
+    var colOffset = document.getElementById('colOffset');
+    colOffset.style.display = res.showOffset ? '' : 'none';
+
     var generatedNow = new Date(2026, 3, 29, 9, 14, 22);
-    var meta = document.getElementById('meta');
-    meta.innerHTML =
+    document.getElementById('meta').innerHTML =
         '<div class="row"><span class="key">site</span><span class="val">' + SITE_NAME + ' <span class="accent">// ICP ' + SITE_ICP + '</span></span></div>'
       + '<div class="row"><span class="key">device</span><span class="val">' + U.escapeHtml(state.device) + '</span></div>'
       + '<div class="row"><span class="key">range</span><span class="val">' + U.ymdhm(state.fromDate) + ' → ' + U.ymdhm(state.toDate) + ' (local, NZ)</span></div>'
-      + '<div class="row"><span class="key">resolution</span><span class="val">30 minutes, interval ending</span></div>'
+      + '<div class="row"><span class="key">resolution</span><span class="val">' + res.label + '</span></div>'
       + '<div class="row"><span class="key">timezone</span><span class="val">Pacific/Auckland (offset shown per row)</span></div>'
       + '<div class="row"><span class="key">units</span><span class="val">kWh</span></div>'
-      + '<div class="row"><span class="key">format</span><span class="val">' + state.format.toUpperCase() + '</span></div>'
+      + '<div class="row"><span class="key">format</span><span class="val">CSV</span></div>'
+      + '<div class="row"><span class="key">rows</span><span class="val">' + U.fmtNum(p.totalRows) + '</span></div>'
       + '<div class="row"><span class="key">generated</span><span class="val">' + U.ymdhm(generatedNow) + ' ' + U.nzOffset(generatedNow) + ' by ' + USER_EMAIL + '</span></div>';
 
-    var tbody = document.getElementById('previewTbody');
+    var showOffset = res.showOffset;
     function renderRow(r) {
       return '<tr>'
-        + '<td>' + r.timestamp + '</td>'
-        + '<td>' + r.offset + '</td>'
-        + '<td class="num">' + (r.importE === '' ? '<span class="empty">—</span>' : fmtKwh(r.importE)) + '</td>'
-        + '<td class="num">' + (r.exportE === '' ? '<span class="empty">—</span>' : fmtKwh(r.exportE)) + '</td>'
-        + '<td class="num">' + fmtKwh(r.consumption) + '</td>'
-        + '<td class="num">' + (r.generation === '' ? '<span class="empty">—</span>' : fmtKwh(r.generation)) + '</td>'
+        + '<td>' + fmtTimestamp(r.timestamp) + '</td>'
+        + (showOffset ? '<td>' + U.nzOffset(r.timestamp) + '</td>' : '<td style="display:none"></td>')
+        + '<td class="num">' + (r.importE === '' ? '<span class="empty">—</span>' : r.importE) + '</td>'
+        + '<td class="num">' + (r.exportE === '' ? '<span class="empty">—</span>' : r.exportE) + '</td>'
+        + '<td class="num">' + r.consumption + '</td>'
+        + '<td class="num">' + (r.generation === '' ? '<span class="empty">—</span>' : r.generation) + '</td>'
         + '<td><span class="flag ' + r.quality.toLowerCase() + '">' + r.quality + '</span></td>'
         + '<td>' + U.escapeHtml(r.device) + '</td>'
         + '</tr>';
     }
+
+    var cols = showOffset ? 8 : 7;
     var html = p.headRows.map(renderRow).join('');
     if (p.tailRows.length > 0) {
       var hidden = p.totalRows - p.headRows.length - p.tailRows.length;
-      html += '<tr class="gap"><td colspan="8">— first ' + p.headRows.length + ' rows · ' + U.fmtNum(hidden) + ' rows hidden · last ' + p.tailRows.length + ' rows —</td></tr>';
+      html += '<tr class="gap"><td colspan="' + cols + '">— first ' + p.headRows.length + ' rows · ' + U.fmtNum(hidden) + ' rows hidden · last ' + p.tailRows.length + ' rows —</td></tr>';
       html += p.tailRows.map(renderRow).join('');
     }
-    tbody.innerHTML = html;
+    document.getElementById('previewTbody').innerHTML = html;
 
-    document.getElementById('downloadFormat').textContent = state.format.toUpperCase();
     document.getElementById('previewEmpty').classList.add('hidden');
     document.getElementById('previewContent').classList.remove('hidden');
   }
 
-  // ---------- export ----------
+  // ---------- CSV export ----------
   function buildCSV() {
+    var res = RESOLUTIONS[state.resolution];
     var lines = [];
     lines.push('# Site,' + SITE_NAME);
     lines.push('# ICP,' + SITE_ICP);
     lines.push('# Device,' + state.device);
     lines.push('# Range,' + U.ymdhm(state.fromDate) + ' → ' + U.ymdhm(state.toDate) + ' (local NZ)');
-    lines.push('# Resolution,30 minutes — interval ending');
+    lines.push('# Resolution,' + res.label);
     lines.push('# Units,kWh');
     lines.push('# Generated,' + U.ymdhm(new Date()) + ' by ' + USER_EMAIL);
     lines.push('');
-    lines.push('Interval Ending,Offset,Import (kWh),Export (kWh),Consumption (kWh),Generation (kWh),Data Quality,Device');
+
+    var header = [res.colHead];
+    if (res.showOffset) header.push('Offset');
+    header.push('Import (kWh)', 'Export (kWh)', 'Consumption (kWh)', 'Generation (kWh)', 'Data Quality', 'Device');
+    lines.push(header.join(','));
 
     var startMs = state.fromDate.getTime();
-    var total = intervalCount(state.fromDate, state.toDate);
+    var total = intervalCount();
     for (var i = 0; i < total; i++) {
-      var t = new Date(startMs + (i + 1) * HALF_HOUR_MS);
-      var r = genInterval(t, state.device);
-      lines.push([
-        r.timestamp, r.offset,
+      var t = new Date(startMs + (i + 1) * res.ms);
+      var r = genInterval(t, state.device, res.multiplier);
+      var row = [fmtTimestamp(r.timestamp)];
+      if (res.showOffset) row.push(U.nzOffset(r.timestamp));
+      row.push(
         r.importE === '' ? '' : r.importE,
         r.exportE === '' ? '' : r.exportE,
         r.consumption,
         r.generation === '' ? '' : r.generation,
         r.quality,
         '"' + r.device + '"'
-      ].join(','));
+      );
+      lines.push(row.join(','));
     }
     return lines.join('\n');
   }
 
-  function downloadBlob(content, filename, mime) {
-    var blob = new Blob([content], { type: mime });
+  function downloadBlob(content, filename) {
+    var blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url; a.download = filename;
@@ -480,95 +459,56 @@
   }
 
   function makeFilename() {
-    var safeSite = SITE_NAME.toLowerCase().replace(/\s+/g, '-');
+    var safeSite   = SITE_NAME.toLowerCase().replace(/\s+/g, '-');
     var safeDevice = state.device.toLowerCase().replace(/\s+/g, '-').replace(/[—–]/g, '-').replace(/-+/g, '-');
-    return 'flex-data-export_' + safeSite + '_' + safeDevice + '_' + U.ymd(state.fromDate) + '_to_' + U.ymd(state.toDate) + '.' + state.format;
+    return 'flex-export_' + safeSite + '_' + safeDevice + '_' + state.resolution + '_' + U.ymd(state.fromDate) + '_to_' + U.ymd(state.toDate) + '.csv';
   }
 
   function exportFile() {
     var btn = document.getElementById('downloadBtn');
     btn.disabled = true;
     btn.innerHTML = 'Generating…';
-
     setTimeout(function () {
-      // Both formats produce CSV in the prototype. Real XLSX would use SheetJS.
-      var content = buildCSV();
-      var mime = state.format === 'csv' ? 'text/csv;charset=utf-8' : 'application/vnd.ms-excel';
-      var filename = makeFilename();
-      downloadBlob(content, filename, mime);
-      addRecentExport({
-        generated: new Date(),
-        device: state.device,
-        from: state.fromDate, to: state.toDate,
-        format: state.format.toUpperCase(),
-        rows: state.preview ? state.preview.totalRows : intervalCount(state.fromDate, state.toDate),
-        by: USER_NAME
-      });
+      downloadBlob(buildCSV(), makeFilename());
       btn.disabled = false;
-      btn.innerHTML = 'Download <span id="downloadFormat">' + state.format.toUpperCase() + '</span> <span class="arrow">↓</span>';
+      btn.innerHTML = 'Download CSV <span class="arrow">↓</span>';
     }, 150);
-  }
-
-  function addRecentExport(rec) {
-    var tbody = document.getElementById('recentTbody');
-    var tr = document.createElement('tr');
-    tr.className = 'new-row';
-    var generatedTxt = dmyMonths(rec.generated) + ' · ' + U.pad(rec.generated.getHours()) + ':' + U.pad(rec.generated.getMinutes());
-    tr.innerHTML =
-        '<td>' + generatedTxt + '</td>'
-      + '<td>' + U.escapeHtml(rec.device) + '</td>'
-      + '<td>' + dmyMonths(rec.from) + ' → ' + dmyMonths(rec.to) + '</td>'
-      + '<td>' + rec.format + '</td>'
-      + '<td>' + U.fmtNum(rec.rows) + '</td>'
-      + '<td>' + rec.by + '</td>'
-      + '<td><a>Download ↓</a></td>';
-    tbody.insertBefore(tr, tbody.firstChild);
   }
 
   // ---------- init ----------
   function init() {
-    document.getElementById('commencementLabel').textContent = dmyMonths(COMMENCEMENT);
-
     var fromIn = document.getElementById('fromDate');
-    var toIn = document.getElementById('toDate');
+    var toIn   = document.getElementById('toDate');
     fromIn.min = U.ymd(COMMENCEMENT);
-    fromIn.max = U.ymd(state.toDate);
-    toIn.min = U.ymd(COMMENCEMENT);
-    toIn.max = '2026-04-29';
+    fromIn.max = '2026-04-29';
+    toIn.min   = U.ymd(COMMENCEMENT);
+    toIn.max   = '2026-04-29';
     fromIn.value = U.ymd(state.fromDate);
-    toIn.value = U.ymd(state.toDate);
+    toIn.value   = U.ymd(state.toDate);
 
     fromIn.addEventListener('change', function () {
       state.fromDate = new Date(fromIn.value + 'T00:00:00');
       state.preset = 'custom';
       document.querySelectorAll('.preset').forEach(function (p) { p.classList.remove('active'); });
-      markStale();
+      markStale(); updateRangeWarning();
     });
     toIn.addEventListener('change', function () {
       state.toDate = new Date(toIn.value + 'T23:30:00');
       state.preset = 'custom';
       document.querySelectorAll('.preset').forEach(function (p) { p.classList.remove('active'); });
-      markStale();
+      markStale(); updateRangeWarning();
     });
 
     document.getElementById('device').addEventListener('change', function (e) {
-      state.device = e.target.value;
-      markStale();
+      state.device = e.target.value; markStale();
+    });
+
+    document.getElementById('resolution').addEventListener('change', function (e) {
+      state.resolution = e.target.value; markStale();
     });
 
     document.querySelectorAll('.preset').forEach(function (p) {
       p.addEventListener('click', function () { setPreset(p.dataset.preset); });
-    });
-
-    document.querySelectorAll('#formatRadios .radio').forEach(function (r) {
-      r.addEventListener('click', function () {
-        document.querySelectorAll('#formatRadios .radio').forEach(function (x) { x.classList.remove('selected'); });
-        r.classList.add('selected');
-        state.format = r.dataset.format;
-        var df = document.getElementById('downloadFormat');
-        if (df) df.textContent = state.format.toUpperCase();
-        markStale();
-      });
     });
 
     document.getElementById('previewBtn').addEventListener('click', function () {
