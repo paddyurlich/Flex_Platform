@@ -153,6 +153,59 @@
     .payback-item-sub   { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 3px; }
     .payback-item-val.positive { color: #2a8a4e; }
 
+    /* ---- ROI tracking tiles ---- */
+    .roi-tiles {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 20px;
+    }
+    .roi-tile {
+      padding: 18px 20px; border-radius: 3px;
+      display: flex; flex-direction: column;
+      border-left: 3px solid transparent;
+    }
+    .roi-tile--rust     { background: rgba(236,95,48,0.08); border-left-color: var(--rust); }
+    .roi-tile--eco      { background: rgba(42,138,78,0.08); border-left-color: #2a8a4e; }
+    .roi-tile--sapphire { background: rgba(85,151,209,0.08); border-left-color: var(--sapphire); }
+    [data-theme="dark"] .roi-tile--rust     { background: rgba(236,95,48,0.13); }
+    [data-theme="dark"] .roi-tile--eco      { background: rgba(42,138,78,0.13); }
+    [data-theme="dark"] .roi-tile--sapphire { background: rgba(85,151,209,0.13); }
+    .roi-tile-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+    }
+    .roi-tile-value {
+      font-size: 32px; font-weight: 800; color: var(--charcoal);
+      letter-spacing: -0.02em; line-height: 1;
+    }
+    .roi-tile-value .unit { font-size: 17px; font-weight: 700; }
+    [data-theme="dark"] .roi-tile-value { color: #e8e3d6; }
+    .roi-tile-compare { display: flex; gap: 18px; margin-top: 10px; }
+    .roi-compare-item { display: flex; flex-direction: column; gap: 2px; }
+    .roi-cval { font-size: 13px; font-weight: 800; }
+    .roi-clabel { font-size: 10px; color: var(--muted); }
+    .roi-c-actual { color: var(--rust); }
+    .roi-c-proj   { color: var(--muted); }
+    .roi-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 2px; margin-top: 10px; width: fit-content;
+    }
+    .roi-badge.ahead    { background: rgba(42,138,78,0.13); color: #2a8a4e; border: 1px solid rgba(42,138,78,.25); }
+    .roi-badge.behind   { background: rgba(236,95,48,0.13); color: var(--rust); border: 1px solid rgba(236,95,48,.25); }
+    .roi-badge.on-track { background: rgba(85,151,209,0.13); color: var(--sapphire); border: 1px solid rgba(85,151,209,.25); }
+    .roi-tile-sub { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+    /* Progress bar */
+    .roi-progress { height: 5px; border-radius: 3px; background: rgba(0,0,0,0.08); overflow: hidden; margin-top: 8px; }
+    [data-theme="dark"] .roi-progress { background: rgba(255,255,255,0.10); }
+    .roi-progress-fill { height: 100%; border-radius: 3px; }
+    .roi-progress-fill.good { background: #2a8a4e; }
+    .roi-progress-fill.warn { background: var(--rust); }
+    /* Table variance colours */
+    td.var-pos { color: #2a8a4e; font-weight: 700; }
+    td.var-neg { color: var(--rust); font-weight: 700; }
+    [data-theme="dark"] td.var-pos { color: #5dcf8a; }
+    [data-theme="dark"] td.var-neg { color: #e07080; }
+
     /* ---- Chart ---- */
     .chart-wrap { position: relative; }
     .chart-wrap canvas { max-width: 100%; }
@@ -180,7 +233,7 @@
     /* ---- Mobile ---- */
     @media (max-width: 780px) {
       .fit-row { grid-template-columns: 1fr; }
-      .payback-grid { grid-template-columns: 1fr; }
+      .roi-tiles { grid-template-columns: 1fr; }
       .as-toolbar { flex-direction: column; align-items: flex-start; }
       .pr-strip { flex-direction: column; align-items: flex-start; }
     }
@@ -258,6 +311,14 @@
           <div class="system-info-item">
             <span class="system-info-label">Inverter</span>
             <span class="system-info-val" id="siInverter">—</span>
+          </div>
+          <div class="system-info-item">
+            <span class="system-info-label">System cost</span>
+            <span class="system-info-val" id="siCost">—</span>
+          </div>
+          <div class="system-info-item">
+            <span class="system-info-label">Proj. annual saving</span>
+            <span class="system-info-val" id="siProjSaving">—</span>
           </div>
         </div>
 
@@ -388,34 +449,110 @@
 
         </div>
 
-        <!-- Savings & payback -->
+        <!-- Return on investment -->
         <div class="card as-section">
           <div class="as-section-head">
-            <span class="as-section-title">Savings &amp; payback tracker</span>
-            <span style="font-size:11px;color:var(--muted);font-weight:600;">Based on actual generation performance</span>
+            <span class="as-section-title">Return on investment</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">Estimated &middot; Based on configured tariff &middot; Since commissioning</span>
           </div>
           <div class="as-section-body">
-            <div class="payback-grid" id="paybackGrid">
-              <div class="payback-item">
-                <div class="payback-item-label">Savings to date (actual)</div>
-                <div class="payback-item-val positive" id="pbSavingsActual">—</div>
-                <div class="payback-item-sub" id="pbSavingsSub">since commissioning</div>
+
+            <div class="roi-tiles">
+
+              <!-- Tile 1: Savings to date -->
+              <div class="roi-tile roi-tile--rust">
+                <div class="roi-tile-label">Savings to date</div>
+                <div class="roi-tile-value" id="roiSavingsVal">—</div>
+                <div class="roi-tile-compare">
+                  <div class="roi-compare-item">
+                    <span class="roi-cval roi-c-actual" id="roiSavingsActual">—</span>
+                    <span class="roi-clabel">Actual</span>
+                  </div>
+                  <div class="roi-compare-item">
+                    <span class="roi-cval roi-c-proj" id="roiSavingsProj">—</span>
+                    <span class="roi-clabel">Projected to date</span>
+                  </div>
+                </div>
+                <span class="roi-badge" id="roiSavingsBadge">—</span>
               </div>
-              <div class="payback-item">
-                <div class="payback-item-label">Savings to date (projected)</div>
-                <div class="payback-item-val" id="pbSavingsProj">—</div>
-                <div class="payback-item-sub">from original design</div>
+
+              <!-- Tile 2: On track -->
+              <div class="roi-tile roi-tile--eco">
+                <div class="roi-tile-label">On track</div>
+                <div class="roi-tile-value" id="roiOnTrackVal">—</div>
+                <div class="roi-tile-sub">Actual &divide; projected cumulative savings</div>
+                <div class="roi-progress"><div class="roi-progress-fill" id="roiProgressFill" style="width:0%;"></div></div>
+                <span class="roi-badge" id="roiOnTrackBadge">—</span>
               </div>
-              <div class="payback-item">
-                <div class="payback-item-label">Original payback period</div>
-                <div class="payback-item-val" id="pbOriginal">—</div>
-                <div class="payback-item-sub">from design document</div>
+
+              <!-- Tile 3: Revised payback -->
+              <div class="roi-tile roi-tile--sapphire">
+                <div class="roi-tile-label">Revised payback</div>
+                <div class="roi-tile-value" id="roiPaybackVal">—</div>
+                <div class="roi-tile-compare">
+                  <div class="roi-compare-item">
+                    <span class="roi-cval roi-c-actual" id="roiPaybackRevised">—</span>
+                    <span class="roi-clabel">Revised</span>
+                  </div>
+                  <div class="roi-compare-item">
+                    <span class="roi-cval roi-c-proj" id="roiPaybackOriginal">—</span>
+                    <span class="roi-clabel">Original</span>
+                  </div>
+                </div>
+                <span class="roi-badge" id="roiPaybackBadge">—</span>
               </div>
-              <div class="payback-item">
-                <div class="payback-item-label">Updated payback (actual PR)</div>
-                <div class="payback-item-val" id="pbUpdated">—</div>
-                <div class="payback-item-sub" id="pbUpdatedSub">—</div>
+
+              <!-- Tile 4: Last month -->
+              <div class="roi-tile roi-tile--rust">
+                <div class="roi-tile-label">Last month — <span id="roiLastMonthLabel">—</span></div>
+                <div class="roi-tile-value" id="roiLastMonthVal">—</div>
+                <div class="roi-tile-compare">
+                  <div class="roi-compare-item">
+                    <span class="roi-cval roi-c-actual" id="roiLastMonthActual">—</span>
+                    <span class="roi-clabel">Actual</span>
+                  </div>
+                  <div class="roi-compare-item">
+                    <span class="roi-cval roi-c-proj" id="roiLastMonthProj">—</span>
+                    <span class="roi-clabel">Projected</span>
+                  </div>
+                </div>
+                <span class="roi-badge" id="roiLastMonthBadge">—</span>
               </div>
+
+            </div>
+
+            <!-- Cumulative savings chart -->
+            <div class="chart-wrap" style="height:220px;">
+              <canvas id="savingsChart"></canvas>
+            </div>
+            <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--muted);font-weight:600;">
+              <span style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:18px;border-top:2.5px solid var(--rust);"></span> Actual savings</span>
+              <span style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:18px;border-top:2px dashed #a2a09e;"></span> Projected savings</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Monthly savings breakdown -->
+        <div class="card as-section">
+          <div class="as-section-head">
+            <span class="as-section-title">Monthly savings breakdown</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">Estimated &middot; Based on configured tariff</span>
+          </div>
+          <div class="as-section-body no-pad">
+            <div class="table-wrap">
+              <table class="preview">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Projected ($)</th>
+                    <th>Actual ($)</th>
+                    <th>Variance ($)</th>
+                    <th>Variance (%)</th>
+                  </tr>
+                </thead>
+                <tbody id="roiTableBody"></tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -502,9 +639,10 @@ var currentSiteId = SITES[0] ? SITES[0].id : 504;
 })();
 
 /* ---- Chart instances ---- */
-var monthlyChartInst = null;
-var cumulChartInst   = null;
-var prChartInst      = null;
+var monthlyChartInst  = null;
+var cumulChartInst    = null;
+var prChartInst       = null;
+var savingsChartInst  = null;
 
 /* ---- Period ---- */
 var currentPeriod = '12m';
@@ -577,6 +715,8 @@ function render() {
   document.getElementById('siForecast').textContent  = (annualForecastKwh / 1000).toFixed(1) + ' MWh / year';
   document.getElementById('siLocation').textContent  = (site.primary_address || '').split(',').slice(-2).join(',').trim() || 'New Zealand';
   document.getElementById('siInverter').textContent  = inverterKw + ' kW inverter';
+  document.getElementById('siCost').textContent      = '$' + systemCost.toLocaleString();
+  document.getElementById('siProjSaving').textContent = '$' + projAnnualSaving.toLocaleString() + ' / yr';
 
   /* --- Stat tiles --- */
   document.getElementById('tileGenActual').innerHTML = Math.round(totalActual / 1000 * 10) / 10 + '<span class="unit"> MWh</span>';
@@ -731,16 +871,163 @@ function render() {
     fDiv.appendChild(span);
   });
 
-  /* --- Savings & payback --- */
-  var totalSavActual = Math.round(totalActual * scActual * tariffRate);
-  var totalSavProj   = Math.round(totalForecast * scForecast * tariffRate);
-  var updatedPayback = Math.round(projPayback / prBase * 10) / 10;
-  document.getElementById('pbSavingsActual').textContent = '$' + totalSavActual.toLocaleString();
-  document.getElementById('pbSavingsSub').textContent    = 'since ' + commStr;
-  document.getElementById('pbSavingsProj').textContent   = '$' + totalSavProj.toLocaleString();
-  document.getElementById('pbOriginal').textContent      = projPayback.toFixed(1) + ' years';
-  document.getElementById('pbUpdated').textContent       = updatedPayback.toFixed(1) + ' years';
-  document.getElementById('pbUpdatedSub').textContent    = updatedPayback <= projPayback + 0.5 ? 'On track with design' : 'Revised — ' + (updatedPayback - projPayback).toFixed(1) + ' yr longer than design';
+  /* --- ROI tracking --- */
+  // Per-month savings: avoided import = generation × self-consumption rate × tariff
+  var savForecastMonths = forecastMonths.map(function (f) {
+    return Math.round(f * scForecast * tariffRate);
+  });
+  var savActualMonths = actualMonths.map(function (a) {
+    return Math.round(a * scActual * tariffRate);
+  });
+
+  // Cumulative series
+  var cumSavF = [], cumSavA = [], csfRun = 0, csaRun = 0;
+  savForecastMonths.forEach(function (f, i) {
+    csfRun += f; csaRun += savActualMonths[i];
+    cumSavF.push(csfRun); cumSavA.push(csaRun);
+  });
+  var totalSavActual = csaRun;
+  var totalSavProj   = csfRun;
+
+  // On-track ratio
+  var onTrackPct = Math.round(totalSavActual / totalSavProj * 100);
+  var onTrackDelta = onTrackPct - 100;
+  var onTrackClass = onTrackPct >= 102 ? 'ahead' : onTrackPct >= 96 ? 'on-track' : 'behind';
+  var onTrackBadge = onTrackPct >= 102
+    ? '&#8593; ' + onTrackDelta + '% ahead'
+    : onTrackPct >= 96
+      ? 'On track'
+      : '&#8595; ' + Math.abs(onTrackDelta) + '% behind';
+
+  // Revised payback (annualised run rate from selected period)
+  var annualisedRunRate = totalSavActual / monthsInPeriod * 12;
+  var revisedPaybackYrs = systemCost / annualisedRunRate;
+  function fmtYM(yrs) {
+    var y = Math.floor(yrs);
+    var m = Math.round((yrs - y) * 12);
+    if (m === 12) { y++; m = 0; }
+    return y + 'y ' + m + 'm';
+  }
+  var paybackDeltaMo = Math.round((revisedPaybackYrs - projPayback) * 12);
+  var paybackBadgeClass = paybackDeltaMo <= 0 ? 'ahead' : 'behind';
+  var paybackBadgeText = paybackDeltaMo <= 0
+    ? '&#8593; ' + Math.abs(paybackDeltaMo) + ' months ahead'
+    : '&#8595; ' + paybackDeltaMo + ' months behind';
+
+  // Savings variance
+  var savDelta = totalSavActual - totalSavProj;
+  var savBadgeClass = savDelta >= 0 ? 'ahead' : 'behind';
+  var savBadgeText = savDelta >= 0
+    ? '&#8593; $' + Math.abs(savDelta).toLocaleString() + ' ahead'
+    : '&#8595; $' + Math.abs(savDelta).toLocaleString() + ' behind';
+
+  // Last month
+  var lastIdx = savActualMonths.length - 1;
+  var lastActual = savActualMonths[lastIdx];
+  var lastProj   = savForecastMonths[lastIdx];
+  var lastLabel  = labels[lastIdx];
+  var lastDelta  = lastActual - lastProj;
+  var lastBadgeClass = lastDelta >= 0 ? 'ahead' : 'behind';
+  var lastBadgeText  = lastDelta >= 0
+    ? '&#8593; $' + Math.abs(lastDelta) + ' ahead'
+    : '&#8595; $' + Math.abs(lastDelta) + ' behind';
+
+  // Populate ROI tiles
+  var $ = function (id) { return document.getElementById(id); };
+  $('roiSavingsVal').textContent     = '$' + totalSavActual.toLocaleString();
+  $('roiSavingsActual').textContent  = '$' + totalSavActual.toLocaleString();
+  $('roiSavingsProj').textContent    = '$' + totalSavProj.toLocaleString();
+  $('roiSavingsBadge').innerHTML     = savBadgeText;
+  $('roiSavingsBadge').className     = 'roi-badge ' + savBadgeClass;
+
+  $('roiOnTrackVal').innerHTML       = onTrackPct + '<span class="unit">%</span>';
+  $('roiOnTrackBadge').innerHTML     = onTrackBadge;
+  $('roiOnTrackBadge').className     = 'roi-badge ' + onTrackClass;
+  var fill = $('roiProgressFill');
+  fill.style.width = Math.min(onTrackPct, 100) + '%';
+  fill.className   = 'roi-progress-fill ' + (onTrackClass === 'behind' ? 'warn' : 'good');
+
+  $('roiPaybackVal').textContent     = fmtYM(revisedPaybackYrs);
+  $('roiPaybackRevised').textContent = fmtYM(revisedPaybackYrs);
+  $('roiPaybackOriginal').textContent = fmtYM(projPayback);
+  $('roiPaybackBadge').innerHTML     = paybackBadgeText;
+  $('roiPaybackBadge').className     = 'roi-badge ' + paybackBadgeClass;
+
+  $('roiLastMonthLabel').textContent = lastLabel;
+  $('roiLastMonthVal').textContent   = '$' + lastActual.toLocaleString();
+  $('roiLastMonthActual').textContent = '$' + lastActual.toLocaleString();
+  $('roiLastMonthProj').textContent  = '$' + lastProj.toLocaleString();
+  $('roiLastMonthBadge').innerHTML   = lastBadgeText;
+  $('roiLastMonthBadge').className   = 'roi-badge ' + lastBadgeClass;
+
+  // Cumulative savings chart
+  if (savingsChartInst) savingsChartInst.destroy();
+  var sCtx = document.getElementById('savingsChart').getContext('2d');
+  savingsChartInst = new Chart(sCtx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Actual savings', data: cumSavA,
+          borderColor: RUST, backgroundColor: 'rgba(236,95,48,0.10)',
+          fill: true, borderWidth: 2.5, pointRadius: 2.5,
+          pointBackgroundColor: RUST, tension: 0.3
+        },
+        {
+          label: 'Projected savings', data: cumSavF,
+          borderColor: STEEL, backgroundColor: 'transparent',
+          fill: false, borderWidth: 1.5, borderDash: [5, 3],
+          pointRadius: 0, tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#22201d',
+          callbacks: {
+            label: function (c) {
+              return c.dataset.label + ': $' + c.raw.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: gridColour() }, ticks: { color: textColour(), font: { size: 10 }, maxTicksLimit: 12 } },
+        y: {
+          grid: { color: gridColour() },
+          ticks: {
+            color: textColour(), font: { size: 10 },
+            callback: function (v) { return '$' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v); }
+          }
+        }
+      }
+    }
+  });
+
+  // Monthly savings breakdown table
+  var tbody = $('roiTableBody');
+  var rows = '';
+  savForecastMonths.slice().reverse().forEach(function (f, ri) {
+    var i = savForecastMonths.length - 1 - ri;
+    var a = savActualMonths[i];
+    var v = a - f;
+    var vPct = ((a / f - 1) * 100).toFixed(1);
+    var cls = v >= 0 ? 'var-pos' : 'var-neg';
+    var sign = v >= 0 ? '+' : '&#8722;';
+    rows += '<tr>' +
+      '<td>' + labels[i] + '</td>' +
+      '<td>$' + f.toLocaleString() + '</td>' +
+      '<td>$' + a.toLocaleString() + '</td>' +
+      '<td class="' + cls + '">' + sign + '$' + Math.abs(v) + '</td>' +
+      '<td class="' + cls + '">' + sign + Math.abs(parseFloat(vPct)).toFixed(1) + '%</td>' +
+      '</tr>';
+  });
+  tbody.innerHTML = rows;
 
   /* --- Health flags --- */
   renderFlags(prBase, deviation);

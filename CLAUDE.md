@@ -8,11 +8,11 @@ Shared business and brand context lives outside this repo. Read these files for 
 
 | File | Purpose |
 |---|---|
-| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/Blackcurrent Prompt documentation/blackcurrent_master_prompt.md` | Master prompt — primary source of truth for Blackcurrent's business context, tone, and product strategy |
-| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/Blackcurrent Prompt documentation/blackcurrent_prompt_document.md` | Extended business context and background |
-| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/Blackcurrent Prompt documentation/blackcurrent_brand_guidelines.md` | Blackcurrent brand: colours, typography, tone of voice |
-| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/Blackcurrent Prompt documentation/flex_brand_guidelines.md` | Flex-specific brand guidelines |
-| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/Blackcurrent Prompt documentation/HTML-email-brand-spec.md` | Brand spec for HTML email (useful for consistent component styling) |
+| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/_brand/blackcurrent_master_prompt.md` | Master prompt — primary source of truth for Blackcurrent's business context, tone, and product strategy |
+| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/_brand/blackcurrent_prompt_document.md` | Extended business context and background |
+| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/_brand/blackcurrent_brand_guidelines.md` | Blackcurrent brand: colours, typography, tone of voice |
+| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/_brand/flex_brand_guidelines.md` | Flex-specific brand guidelines |
+| `/Users/blackcurrent_paddy/Library/CloudStorage/OneDrive-blackcurrent.io/blackcurrent.io - Flex Product Playbook/_brand/HTML-email-brand-spec.md` | Brand spec for HTML email (useful for consistent component styling) |
 
 ## Product requirements
 
