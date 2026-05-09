@@ -26,6 +26,7 @@ The public-facing module set is defined at [FlexPlatformSpotlight](https://paddy
 | 12 | Flex:Optimisation | [12-optimisation.md](./12-optimisation.md) | Automatically operate the system for the best outcome. | In development |
 | 13 | Flex:Submetering | [13-submetering.md](./13-submetering.md) | Show me where energy is being used across the site. | Planned |
 | 14 | Flex:Reporting | [14-reporting.md](./14-reporting.md) | Keep me informed with clear, ongoing performance updates. | Planned |
+| 15 | Flex:Health | [15-health.md](./15-health.md) | *Are all customer assets online and healthy?* (internal ops) | Implemented (prototype) |
 
 *Customer questions in italics are working descriptions; plain text quotes are verbatim from the Spotlight site.*
 
@@ -39,6 +40,7 @@ The Flex sidebar groups modules into four sections:
 - **Operate** — Load Monitoring, Schedule, Control
 - **Optimise** — Tariff, Assure, Simulator, Insights, Optimisation
 - **Data** — Submetering, Reporting, Data Export
+- **Operations** — Flex:Health *(internal only)*
 
 ---
 
