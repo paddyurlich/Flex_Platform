@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Flex Platform Admin module defines how users are provisioned, what they can see, and what they can change. It introduces four distinct access tiers — Super Admin, Partner Admin, User Admin, and Regular User — and the management interfaces that let authorised users control who has access to which customers, sites, and features.
+The Flex Platform Admin module defines how users are provisioned, what they can see, and what they can change. It introduces four distinct access tiers — Super Admin, Partner Admin, User Admin, and Standard User — and the management interfaces that let authorised users control who has access to which customers, sites, and features.
 
 ---
 
@@ -15,7 +15,7 @@ The Flex Platform Admin module defines how users are provisioned, what they can 
 As the Flex Platform scales across direct Blackcurrent customers and Flex Energy rural customers (via Farmlands), access control becomes a critical operational and commercial requirement. Currently there is no structured mechanism for:
 
 - Inviting customer or partner users to the platform with defined permissions.
-- Preventing regular users from making changes they shouldn't (device configuration, tariff settings, user management).
+- Preventing standard users from making changes they shouldn't (device configuration, tariff settings, user management).
 - Giving Farmlands visibility and management access across their rural portfolio without exposing other customers' data.
 - Keeping an auditable record of who changed what and when.
 
@@ -50,9 +50,9 @@ Scoped to the partner's own customer portfolio. A Partner Admin can see and mana
 
 ### User Admin — Customer Portfolio Administrators
 
-Scoped to a defined subset of customers within a partner or direct Blackcurrent relationship. Typically the energy manager or facilities administrator at a multi-site customer, or a reseller managing a small book of accounts. Can edit all customer-facing data for their assigned customers and sites, invite regular users, and configure schedules. Cannot invite or manage other User Admins, create new customers, or change tariff plans.
+Scoped to a defined subset of customers within a partner or direct Blackcurrent relationship. Typically the energy manager or facilities administrator at a multi-site customer, or a reseller managing a small book of accounts. Can edit all customer-facing data for their assigned customers and sites, invite standard users, and configure schedules. Cannot invite or manage other User Admins, create new customers, or change tariff plans.
 
-### Regular User — Site Operators and Viewers
+### Standard User — Site Operators and Viewers
 
 Read access to all data within their assigned site(s). Limited write access: own profile and preferences, device control actions (within the bounds Flex:Control allows), scheduling preferences within approved parameters, and support request submission. Cannot edit site configuration, customer records, or user accounts.
 
@@ -64,19 +64,19 @@ The table below defines what each role can do. **Edit** = create, update, delete
 
 ### User & role management
 
-| Action | Super Admin | Partner Admin | User Admin | Regular User |
+| Action | Super Admin | Partner Admin | User Admin | Standard User |
 |---|---|---|---|---|
 | Invite Super Admin | Edit | — | — | — |
 | Invite Partner Admin | Edit | — | — | — |
 | Invite User Admin | Edit | Edit (within partner) | — | — |
-| Invite Regular User | Edit | Edit (within partner) | Edit (within their customers) | — |
+| Invite Standard User | Edit | Edit (within partner) | Edit (within their customers) | — |
 | Assign / change roles | Edit | Edit (within partner; cannot assign above own role) | — | — |
-| Deactivate users | Edit | Edit (within partner) | Edit (Regular Users only, within their customers) | — |
+| Deactivate users | Edit | Edit (within partner) | Edit (Standard Users only, within their customers) | — |
 | View user list | All users | Partner users | Customer users | — |
 
 ### Customer & site data
 
-| Action | Super Admin | Partner Admin | User Admin | Regular User |
+| Action | Super Admin | Partner Admin | User Admin | Standard User |
 |---|---|---|---|---|
 | Create / delete customer | Edit | — | — | — |
 | Edit customer name, sector, contacts | Edit | Edit (within partner) | Edit (within their customers) | — |
@@ -86,7 +86,7 @@ The table below defines what each role can do. **Edit** = create, update, delete
 
 ### Device & asset configuration
 
-| Action | Super Admin | Partner Admin | User Admin | Regular User |
+| Action | Super Admin | Partner Admin | User Admin | Standard User |
 |---|---|---|---|---|
 | Commission / decommission device | Edit | — | — | — |
 | Edit device specs (PV, battery, inverter size) | Edit | View | View | — |
@@ -96,7 +96,7 @@ The table below defines what each role can do. **Edit** = create, update, delete
 
 ### Tariff & billing
 
-| Action | Super Admin | Partner Admin | User Admin | Regular User |
+| Action | Super Admin | Partner Admin | User Admin | Standard User |
 |---|---|---|---|---|
 | Create / edit tariff plans | Edit | — | — | — |
 | Assign tariff plan to a site | Edit | — | — | — |
@@ -105,7 +105,7 @@ The table below defines what each role can do. **Edit** = create, update, delete
 
 ### Platform features
 
-| Feature | Super Admin | Partner Admin | User Admin | Regular User |
+| Feature | Super Admin | Partner Admin | User Admin | Standard User |
 |---|---|---|---|---|
 | Flex:Portfolio | Full | Partner portfolio | Their customers | Their sites |
 | Flex:Health | Full | Partner portfolio | — | — |
@@ -152,7 +152,7 @@ A dedicated settings area accessible at `/admin`, visible only to Super Admin, P
 On first login, users are directed to the appropriate landing page for their role:
 - Super Admin and Partner Admin → Flex:Portfolio (full or scoped).
 - User Admin → Flex:Portfolio (scoped to their customers).
-- Regular User → Energy Dashboard for their primary site.
+- Standard User → Energy Dashboard for their primary site.
 
 Navigation items are rendered based on role — modules the user cannot access are hidden, not just greyed out.
 
@@ -171,7 +171,7 @@ When a Partner Admin (or any user within a partner portfolio) is logged in, the 
 | Data | Notes |
 |---|---|
 | User record | ID, name, email, hashed password, role, status, created at, last login, assigned scope (partner / customer / site IDs) |
-| Role definition | Enumerated: super_admin, partner_admin, user_admin, regular_user |
+| Role definition | Enumerated: super_admin, partner_admin, user_admin, standard_user |
 | Partner record | ID, name, brand configuration, assigned customers |
 | Invitation record | Token (hashed), invitee email, role, invited by, expiry, status (pending / accepted / expired) |
 | Audit log entry | Timestamp, actor user ID, action, object type, object ID, before/after values |
@@ -181,7 +181,7 @@ When a Partner Admin (or any user within a partner portfolio) is logged in, the 
 
 ## Constraints and security
 
-- **Least privilege by default.** New invitations default to Regular User. Roles must be explicitly elevated by an authorised admin.
+- **Least privilege by default.** New invitations default to Standard User. Roles must be explicitly elevated by an authorised admin.
 - **No role escalation.** A user cannot grant a role equal to or above their own. A User Admin cannot make another User Admin.
 - **Scope cannot be widened by the user.** A User Admin cannot add customers to their own scope — only Super Admin or Partner Admin can do this.
 - **Session management.** Sessions expire after a configurable idle period (default: 8 hours). Re-authentication required for sensitive actions (role changes, user deactivation).
@@ -197,8 +197,8 @@ When a Partner Admin (or any user within a partner portfolio) is logged in, the 
 | Module | Relationship |
 |---|---|
 | **Flex:Health** | Super Admin and Partner Admin only. Surfaces site-level health signals; role scoping determines which sites are visible. |
-| **Flex:Control** | Regular Users can trigger control actions but cannot change device configuration. Control actions are attributed to the triggering user in the audit trail. |
-| **Flex:Schedule** | Regular Users can edit schedules within parameters defined by User Admin or Super Admin (e.g. can shift a schedule window but cannot disable device control entirely). |
+| **Flex:Control** | Standard Users can trigger control actions but cannot change device configuration. Control actions are attributed to the triggering user in the audit trail. |
+| **Flex:Schedule** | Standard Users can edit schedules within parameters defined by User Admin or Super Admin (e.g. can shift a schedule window but cannot disable device control entirely). |
 | **All modules** | Navigation items are rendered conditionally based on role. Hidden items are not loaded, not just hidden in CSS. |
 
 ---
