@@ -27,6 +27,7 @@ The public-facing module set is defined at [FlexPlatformSpotlight](https://paddy
 | 13 | Flex:Submetering | [13-submetering.md](./13-submetering.md) | Show me where energy is being used across the site. | Planned |
 | 14 | Flex:Reporting | [14-reporting.md](./14-reporting.md) | Keep me informed with clear, ongoing performance updates. | Planned |
 | 15 | Flex:Health | [15-health.md](./15-health.md) | *Are all customer assets online and healthy?* (internal ops) | Implemented (prototype) |
+| 16 | Admin & Access Control | [16-admin.md](./16-admin.md) | *Who can see and change what across the platform?* | Planned |
 
 *Customer questions in italics are working descriptions; plain text quotes are verbatim from the Spotlight site.*
 
