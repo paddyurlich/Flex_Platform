@@ -76,6 +76,9 @@
     ]},
     { group: 'Data', items: [
       { nav: 'data-export', href: 'flex-data-export.html', icon: 'file-down', label: 'Flex:DataExport' }
+    ]},
+    { group: 'Operations', items: [
+      { nav: 'health', href: 'flex-health.html', icon: 'heart-pulse', label: 'Flex:Health' }
     ]}
   ];
 
@@ -104,6 +107,7 @@
     + '</div>'
     + '<div class="product-tag"><span>Flex</span> &nbsp;Platform</div>';
 
+  html += '<div class="nav-scroll">';
   NAV.forEach(function (group) {
     html += '<div class="nav-group">'
       + '<div class="nav-group-title">' + group.group + '</div>';
@@ -116,6 +120,7 @@
     });
     html += '</div>';
   });
+  html += '</div>';
 
   /* Brand switcher at bottom of nav */
   var bcActive    = currentBrand === 'blackcurrent' ? ' active active-bc'    : ' active-bc';

@@ -727,9 +727,17 @@ table.preview tbody tr.gap td {
 /* Ember wordmark paths — higher specificity beats [data-theme="dark"] logo rule */
 [data-brand="ember"] .sidebar .logo .eml-text path { fill: var(--egg); }
 
+/* Nav scroll area — lets nav groups scroll independently of the pinned brand-switcher */
+.nav-scroll {
+  flex: 1 1 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+
 /* Brand switcher — sits at bottom of sidebar above footer */
 .brand-switcher {
-  margin: auto 14px 0;
+  margin: 8px 14px 0;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: rgba(255,255,255,0.06);
