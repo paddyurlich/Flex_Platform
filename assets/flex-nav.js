@@ -78,7 +78,8 @@
       { nav: 'data-export', href: 'flex-data-export.html', icon: 'file-down', label: 'Flex:DataExport' }
     ]},
     { group: 'Operations', items: [
-      { nav: 'health', href: 'flex-health.html', icon: 'heart-pulse', label: 'Flex:Health' }
+      { nav: 'health', href: 'flex-health.html', icon: 'heart-pulse', label: 'Flex:Health' },
+      { nav: 'admin',  href: 'flex-admin.html',  icon: 'shield-check', label: 'Admin' }
     ]}
   ];
 
