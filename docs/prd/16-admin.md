@@ -133,12 +133,152 @@ The table below defines what each role can do. **Edit** = create, update, delete
 
 ### Admin console
 
-A dedicated settings area accessible at `/admin`, visible only to Super Admin, Partner Admin, and User Admin (with scope-appropriate views). Sections:
+A dedicated settings area accessible at `/admin`, visible only to Super Admin, Partner Admin, and User Admin (with scope-appropriate views). Four tabs: **Users**, **Customers**, **Sites**, **Devices** (Sites and Devices visible to Super Admin only in full; scoped views for lower roles as described below).
 
-- **Users** — list of all users in scope, their role, status (active / invited / deactivated), and last login.
-- **Customers** — list of customers in scope with site counts, User Admin assignments, and data completeness indicators.
-- **Sites** — list of sites in scope with commissioning status, assigned tariff, and device count.
-- **Audit log** — filterable record of all write actions taken within the admin's scope.
+---
+
+#### Sites tab
+
+Visible to Super Admin (all sites), Partner Admin (partner portfolio), and User Admin (their assigned customers' sites).
+
+**Table columns**
+
+| Column | Description |
+|---|---|
+| Site name | Full site name; links to the site's Energy Dashboard |
+| Customer | Customer name and sector tag |
+| Partner | Partner name (Super Admin only; hidden for Partner Admin and below) |
+| ICP | Electricity network ICP number |
+| GXP | Grid exit point identifier |
+| Address | Street address, suburb, region |
+| Commissioned | Yes / No / Pending — whether the site has an active Edge device commissioned |
+| Tariff plan | Name of the assigned tariff plan, or "—" if unassigned |
+| Devices | Count of active devices at the site |
+| Status | Site telemetry status: Online / Stale / Offline / Pending (sourced from Flex:Health signals) |
+
+Default sort: Partner → Customer → Site name (alphabetical). All columns sortable.
+
+**Filters and search**
+
+- Free-text search across site name, customer name, ICP, and address.
+- Filter by: Partner (Super Admin only), Customer, Sector, Commissioned status, Telemetry status.
+
+**Super Admin actions**
+
+| Action | Trigger | Behaviour |
+|---|---|---|
+| Create site | "New site" button (top right) | Opens a modal with required fields: site name, customer assignment, address, ICP, GXP. On save, site is created with status Pending. |
+| Edit site | Edit icon on row, or click into site detail | Opens an edit panel with all site fields editable: name, address, ICP, GXP, customer assignment, partner assignment. Changes are written immediately and logged to the audit trail. |
+| Assign tariff | "Assign tariff" action in row actions menu | Opens a picker modal listing all available tariff plans. Selecting a plan assigns it to the site and logs the change. |
+| Commission site | "Commission" action (Pending sites only) | Marks the site as commissioned. Requires at least one device to be assigned. Triggers a confirmation step before completing. |
+| Decommission site | "Decommission" action (active sites only) | Removes the site from active telemetry and marks it Offline. Requires explicit confirmation. All devices remain in inventory but are flagged as unassigned. |
+| Delete site | "Delete" action in row actions menu | Permanently removes the site record. Only available on Pending (uncommissioned) sites. Requires typed confirmation ("delete [site name]"). Cannot delete a site with active devices or billing history. |
+| Add / remove devices | "Manage devices" action | Opens the site's device inventory panel — see Devices tab behaviour below. |
+
+**Partner Admin and User Admin**
+
+Same table, scoped to their portfolio. Edit actions limited per permission matrix (no create/delete site, no tariff assignment, no commissioning). "Commission", "Decommission", and "Delete" actions are hidden.
+
+---
+
+#### Devices tab
+
+Visible to **Super Admin only**. Partner Admin and User Admin do not have access to a Devices tab; device information for their scope is surfaced within the site detail view.
+
+**Table columns**
+
+| Column | Description |
+|---|---|
+| Device type | Category: Solar inverter / Battery / EV charger / Heat pump / Edge device / Other |
+| Make / model | Manufacturer and model name |
+| Serial number | Device serial number as recorded at commissioning |
+| Site | Site the device is assigned to; "Unassigned" if not yet assigned |
+| Customer | Customer of the assigned site |
+| PV size (kWp) | Rated solar capacity; populated for solar inverters only |
+| Battery capacity (kWh) | Usable battery capacity; populated for battery systems only |
+| Inverter size (kW) | Rated inverter output; populated for inverter-type devices |
+| Edge device ID | Unique identifier of the BC Edge unit; populated for Edge devices only |
+| Last telemetry | Timestamp of most recent data received from this device |
+| Status | Online / Offline / Fault / Unassigned |
+
+Default sort: Status (Fault first) → Site → Device type. All columns except Serial number are sortable.
+
+**Filters and search**
+
+- Free-text search across device type, make/model, serial number, and site name.
+- Filter by: Device type, Site, Customer, Status (Online / Offline / Fault / Unassigned).
+
+**Super Admin actions**
+
+| Action | Trigger | Behaviour |
+|---|---|---|
+| Commission device | "Commission device" button (top right) | Opens a multi-step modal: (1) select device type and enter make, model, serial number; (2) enter technical specs relevant to device type (PV size, battery capacity, inverter size, Edge device ID); (3) assign to a site (optional at this step — device can be commissioned as Unassigned and assigned later). On save, device is created and logged. |
+| Edit device specs | Edit icon on row | Opens an edit panel for all technical specification fields: device type, make, model, serial number, PV size, battery capacity, inverter size, Edge device ID. Site assignment is not editable here (use "Reassign to site"). Changes are logged. |
+| Edit Edge device settings | "Edge settings" action (Edge devices only) | Opens a panel for Edge-specific configuration: polling interval, connectivity parameters, firmware channel. These fields are restricted to Super Admin and not visible in the standard device edit panel. |
+| Assign to site | "Assign to site" action (Unassigned devices) | Opens a site picker. Selecting a site links the device to that site and updates the site's device count. Logged to audit trail. |
+| Reassign to site | "Reassign" action (assigned devices) | Same as Assign, with a confirmation step noting the device will be removed from its current site. |
+| Remove from site | "Remove from site" action | Unlinks the device from its site. Device status becomes Unassigned. The site's device count decrements. Requires confirmation. Logged. |
+| Decommission device | "Decommission" action | Removes the device from active telemetry. Device record is retained for audit purposes. Requires confirmation. If the device is currently assigned to a site, the site must be decommissioned first or the device removed from the site before decommissioning. |
+
+**Device detail panel**
+
+Clicking a device row opens a right-side panel showing:
+- Full specification summary (all fields from the table plus any Edge-specific config).
+- Assignment history — a chronological log of every site this device has been assigned to.
+- Telemetry summary — last 24 hours of data received (or "No data" if Offline / Unassigned).
+- Audit entries — all write actions against this device record, filtered from the main audit log.
+
+---
+
+#### BC Edge and SIM card management
+
+BC Edge units are a specific subtype of device with an additional allocation layer. The full hierarchy is:
+
+```
+SIM card
+└── BC Edge hardware unit
+    └── Energy devices (solar inverter, battery, EV charger, heat pump)
+        └── Site
+            └── Customer
+```
+
+SIM cards are procured and owned by Blackcurrent. Each SIM is provisioned for 4G/LTE connectivity and allocated to exactly one BC Edge hardware unit. A BC Edge unit communicates telemetry for all energy devices at its assigned site.
+
+**SIM card records**
+
+A SIM inventory is maintained within the Devices tab. Each SIM record holds:
+
+| Field | Description |
+|---|---|
+| ICCID | Unique SIM identifier (20 digits) |
+| MSISDN | SIM phone number (for diagnostics) |
+| Network | Carrier (e.g. Spark, One NZ, 2degrees) |
+| Data plan | Plan tier and monthly data cap |
+| Status | Active / Suspended / Unallocated |
+| Allocated to | BC Edge serial number the SIM is installed in; "Unallocated" if in stock |
+| Last seen | Timestamp of most recent network registration |
+
+**SIM lifecycle**
+
+| Step | Action | Who |
+|---|---|---|
+| Procure | New SIM added to inventory with Status = Unallocated | Super Admin |
+| Allocate | SIM assigned to a specific BC Edge unit; ICCID recorded against the Edge device record | Super Admin |
+| Activate | SIM is activated on network once Edge device is installed at site | Super Admin |
+| Suspend | SIM suspended (site decommissioned or hardware fault); data stops billing | Super Admin |
+| Reallocate | Suspended SIM unlinked from Edge unit and reassigned to a replacement unit | Super Admin |
+
+**Edge device settings panel (extended)**
+
+When a Super Admin opens Edge settings for a BC Edge unit, the panel includes a SIM section:
+- **Allocated SIM** — ICCID and carrier of the SIM currently installed in the unit. A "Reallocate SIM" action unlinks the current SIM and opens a picker to select an unallocated SIM from inventory.
+- **Connectivity status** — current 4G signal quality and last-seen timestamp from the network.
+- **Polling interval** — how frequently the Edge unit sends telemetry (1 / 5 / 15 / 30 minutes).
+- **Firmware channel** — Stable / Beta / Edge (preview).
+
+**SIM inventory view**
+
+A dedicated SIM Inventory sub-section is accessible from the Devices tab (filter: "SIMs"). It shows all SIMs in the Blackcurrent inventory with their status and allocation. Super Admin can add new SIMs to inventory, allocate/deallocate SIMs, and suspend/activate SIMs. This view is not accessible to Partner Admin, User Admin, or Standard User.
 
 ### User invitation flow
 
@@ -176,6 +316,10 @@ When a Partner Admin (or any user within a partner portfolio) is logged in, the 
 | Invitation record | Token (hashed), invitee email, role, invited by, expiry, status (pending / accepted / expired) |
 | Audit log entry | Timestamp, actor user ID, action, object type, object ID, before/after values |
 | Session record | Token, user ID, created at, last active, IP address, user agent |
+| Site record | ID, name, customer ID, partner ID, address, ICP, GXP, tariff plan ID, commissioned status, status |
+| Device record | ID, device type, make, model, serial number, site ID (nullable), PV size kWp, battery capacity kWh, inverter size kW, edge device ID (FK to BC Edge record), status, commissioned at |
+| BC Edge record | ID (serial / Edge device ID), SIM ICCID (FK to SIM record), site ID (nullable), firmware channel, polling interval, connectivity mode, status, last telemetry |
+| SIM record | ICCID, MSISDN, carrier/network, data plan, status (active / suspended / unallocated), allocated edge device ID (nullable), activated at, last seen |
 
 ---
 

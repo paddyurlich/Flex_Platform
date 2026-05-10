@@ -228,6 +228,35 @@
     [data-theme="dark"] .dev-status.fault      { background: #450a0a; color: #fca5a5; }
     [data-theme="dark"] .dev-status.unassigned { background: #2e2a25; color: #6b6660; }
 
+    /* ── Devices sub-tabs ────────────────────────────────────────  */
+    .device-sub-tabs {
+      display: flex; gap: 0;
+      border: 1px solid var(--line); border-radius: 4px; overflow: hidden;
+    }
+    .device-sub-tab {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 5px 12px; border: none; background: none; cursor: pointer;
+      color: var(--steel); transition: all 0.1s;
+    }
+    .device-sub-tab + .device-sub-tab { border-left: 1px solid var(--line); }
+    .device-sub-tab:hover { background: var(--white); color: var(--charcoal); }
+    .device-sub-tab.active { background: var(--rust); color: #fff; border-color: var(--rust); }
+    [data-theme="dark"] .device-sub-tabs { border-color: #3a352f; }
+    [data-theme="dark"] .device-sub-tab + .device-sub-tab { border-left-color: #3a352f; }
+    [data-theme="dark"] .device-sub-tab:hover { background: #201d19; color: var(--egg); }
+
+    /* ── SIM status badge ─────────────────────────────────────── */
+    .sim-status {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .sim-status.active      { background: #22c55e; color: #0f3d1f; }
+    .sim-status.suspended   { background: #fee2e2; color: #991b1b; }
+    .sim-status.unallocated { background: var(--line); color: var(--steel); }
+    [data-theme="dark"] .sim-status.active      { background: #16a34a; color: #d1fae5; }
+    [data-theme="dark"] .sim-status.suspended   { background: #450a0a; color: #fca5a5; }
+    [data-theme="dark"] .sim-status.unallocated { background: #2e2a25; color: #6b6660; }
+
     /* ── Step indicator (multi-step modals) ───────────────────── */
     .modal-steps {
       display: flex; gap: 0; margin-bottom: 20px;
@@ -405,13 +434,20 @@
           <div class="tab-body" id="tab-devices" style="display:none;">
             <div class="card">
               <div class="tab-card-head">
-                <div><h2>Devices <span class="count" id="deviceCount"></span></h2></div>
+                <div>
+                  <h2>Devices <span class="count" id="deviceCount"></span></h2>
+                </div>
                 <div style="display:flex;gap:8px;align-items:center;">
-                  <input type="search" class="input" id="deviceSearch" placeholder="Search devices…" style="width:220px;" />
+                  <div class="device-sub-tabs" id="deviceSubTabs">
+                    <button class="device-sub-tab active" data-sub="devices">Devices</button>
+                    <button class="device-sub-tab" data-sub="sims">SIM Inventory</button>
+                  </div>
+                  <input type="search" class="input" id="deviceSearch" placeholder="Search…" style="width:200px;" />
                   <button class="btn primary" id="commissionDeviceBtn">+ Commission device</button>
                 </div>
               </div>
-              <div class="table-wrap">
+              <!-- Devices sub-view -->
+              <div id="deviceSubDevices" class="table-wrap">
                 <table class="preview">
                   <thead>
                     <tr>
@@ -428,6 +464,24 @@
                     </tr>
                   </thead>
                   <tbody id="devicesBody"></tbody>
+                </table>
+              </div>
+              <!-- SIM inventory sub-view -->
+              <div id="deviceSubSims" class="table-wrap" style="display:none;">
+                <table class="preview">
+                  <thead>
+                    <tr>
+                      <th>ICCID</th>
+                      <th>Network</th>
+                      <th>Data plan</th>
+                      <th>Status</th>
+                      <th>Allocated to (BC Edge)</th>
+                      <th>Site</th>
+                      <th>Last seen</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="simsBody"></tbody>
                 </table>
               </div>
             </div>
@@ -481,6 +535,18 @@
 
   /* ── Tariff plans ────────────────────────────────────────────── */
   var TARIFF_PLANS = ['Flex Saver', 'Flex Control', 'Flex Optimise', 'Standard Rate'];
+
+  /* ── SIM inventory ───────────────────────────────────────────── */
+  var SIMS = [
+    { iccid: '89640400501234567890', msisdn: '+64211234567', network: 'Spark',   plan: '1 GB / month', status: 'active',      edge_id: 'BCE-0087', site_name: 'Keith Andrews – Wiri Site',      last_seen: '2026-05-10T08:28:00' },
+    { iccid: '89640400501234567891', msisdn: '+64211234568', network: 'Spark',   plan: '1 GB / month', status: 'active',      edge_id: 'BCE-0063', site_name: 'Aspara – Main Growing Facility', last_seen: '2026-05-10T08:30:00' },
+    { iccid: '89640400501234567892', msisdn: '+64211234569', network: 'One NZ',  plan: '1 GB / month', status: 'active',      edge_id: 'BCE-0074', site_name: 'Wairakei Primary – Main Building', last_seen: '2026-05-08T18:30:00' },
+    { iccid: '89640400501234567893', msisdn: '+64211234570', network: 'One NZ',  plan: '1 GB / month', status: 'active',      edge_id: 'BCE-0091', site_name: null,                             last_seen: '2026-04-28T11:15:00' },
+    { iccid: '89640400501234567894', msisdn: '+64211234571', network: '2degrees', plan: '500 MB / month', status: 'suspended', edge_id: null,       site_name: null,                             last_seen: '2026-02-14T09:40:00' },
+    { iccid: '89640400501234567895', msisdn: '+64211234572', network: 'Spark',   plan: '1 GB / month', status: 'unallocated', edge_id: null,       site_name: null,                             last_seen: null },
+    { iccid: '89640400501234567896', msisdn: '+64211234573', network: 'Spark',   plan: '1 GB / month', status: 'unallocated', edge_id: null,       site_name: null,                             last_seen: null },
+    { iccid: '89640400501234567897', msisdn: '+64211234574', network: 'One NZ',  plan: '1 GB / month', status: 'unallocated', edge_id: null,       site_name: null,                             last_seen: null },
+  ];
 
   /* ── Synthetic device data ───────────────────────────────────── */
   var DEVICES = [
@@ -553,8 +619,9 @@
   };
 
   /* ── State ───────────────────────────────────────────────────── */
-  var demoRole  = 'super_admin';
-  var activeTab = 'users';
+  var demoRole    = 'super_admin';
+  var activeTab   = 'users';
+  var deviceSubTab = 'devices'; /* 'devices' | 'sims' */
 
   /* ── Helpers ─────────────────────────────────────────────────── */
   function roleBadge(role) {
@@ -748,8 +815,49 @@
     }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--steel);padding:24px;">No sites found.</td></tr>';
   }
 
-  /* ── Render: Devices tab ─────────────────────────────────────── */
+  /* ── Render: Devices tab dispatcher ─────────────────────────── */
   function renderDevices() {
+    document.getElementById('deviceSubDevices').style.display = deviceSubTab === 'devices' ? '' : 'none';
+    document.getElementById('deviceSubSims').style.display    = deviceSubTab === 'sims'    ? '' : 'none';
+    document.getElementById('commissionDeviceBtn').textContent = deviceSubTab === 'sims' ? '+ Add SIM' : '+ Commission device';
+    document.getElementById('commissionDeviceBtn').onclick     = deviceSubTab === 'sims' ? openAddSimModal : openCommissionDeviceModal;
+    if (deviceSubTab === 'sims') { renderSims(); return; }
+    renderDevicesList();
+  }
+
+  function renderSims() {
+    var search = (document.getElementById('deviceSearch').value || '').toLowerCase();
+    var sims = SIMS.filter(function(s) {
+      if (!search) return true;
+      return ([s.iccid, s.network, s.plan, s.edge_id, s.site_name].filter(Boolean).join(' ')).toLowerCase().indexOf(search) !== -1;
+    });
+    document.getElementById('deviceCount').textContent = '· ' + sims.length + ' SIMs';
+    document.getElementById('simsBody').innerHTML = sims.length ? sims.map(function(s) {
+      var actions = '<button class="tbl-action" onclick="openSimDetail(\'' + s.iccid + '\')">Detail</button>';
+      if (s.status === 'unallocated') {
+        actions += '<button class="tbl-action" onclick="openAllocateSimModal(\'' + s.iccid + '\')">Allocate to Edge</button>';
+      } else if (s.status === 'active') {
+        actions += '<button class="tbl-action danger" onclick="openSuspendSimConfirm(\'' + s.iccid + '\')">Suspend</button>';
+        actions += '<button class="tbl-action" onclick="openReallocateSimModal(\'' + s.iccid + '\')">Reallocate</button>';
+      } else if (s.status === 'suspended') {
+        actions += '<button class="tbl-action" onclick="openAllocateSimModal(\'' + s.iccid + '\')">Reallocate</button>';
+        actions += '<button class="tbl-action" onclick="openActivateSimConfirm(\'' + s.iccid + '\')">Activate</button>';
+      }
+      return '<tr>'
+        + '<td><code style="font-size:11px;">' + s.iccid + '</code></td>'
+        + '<td style="font-size:12px;">' + U.escapeHtml(s.network) + '</td>'
+        + '<td style="font-size:12px;">' + U.escapeHtml(s.plan) + '</td>'
+        + '<td><span class="sim-status ' + s.status + '">' + s.status + '</span></td>'
+        + '<td><code style="font-size:11px;">' + (s.edge_id ? U.escapeHtml(s.edge_id) : '<span class="empty">—</span>') + '</code></td>'
+        + '<td style="font-size:12px;">' + (s.site_name ? U.escapeHtml(s.site_name) : '<span class="empty">—</span>') + '</td>'
+        + '<td style="font-size:12px;font-variant-numeric:tabular-nums;">' + (s.last_seen ? fmtTs(s.last_seen) : '<span class="empty">—</span>') + '</td>'
+        + '<td>' + actions + '</td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--steel);padding:24px;">No SIMs match.</td></tr>';
+  }
+
+  /* ── Render: Devices list ────────────────────────────────────── */
+  function renderDevicesList() {
     var search = (document.getElementById('deviceSearch').value || '').toLowerCase();
     var TYPE_LABELS = { solar_inverter: 'Solar inverter', battery: 'Battery', edge_device: 'Edge device', ev_charger: 'EV charger', heat_pump: 'Heat pump', other: 'Other' };
     var devices = DEVICES.filter(function(d) {
@@ -813,6 +921,90 @@
         + '<td style="font-size:12px;">' + U.escapeHtml(e.detail) + '</td>'
         + '</tr>';
     }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--steel);padding:24px;">No entries match.</td></tr>';
+  }
+
+  /* ── SIM modal helpers ───────────────────────────────────────── */
+  function openSimDetail(iccid) {
+    var s = SIMS.find(function(x) { return x.iccid === iccid; });
+    if (!s) return;
+    window.FlexModal.open({
+      title: 'SIM detail', eyebrow: s.iccid,
+      html: '<div>'
+        + '<div class="detail-grid">'
+        +   '<div class="detail-row"><span class="detail-label">ICCID</span><span class="detail-value"><code>' + s.iccid + '</code></span></div>'
+        +   '<div class="detail-row"><span class="detail-label">MSISDN</span><span class="detail-value"><code>' + U.escapeHtml(s.msisdn) + '</code></span></div>'
+        +   '<div class="detail-row"><span class="detail-label">Network</span><span class="detail-value">' + U.escapeHtml(s.network) + '</span></div>'
+        +   '<div class="detail-row"><span class="detail-label">Data plan</span><span class="detail-value">' + U.escapeHtml(s.plan) + '</span></div>'
+        +   '<div class="detail-row"><span class="detail-label">Status</span><span class="detail-value"><span class="sim-status ' + s.status + '">' + s.status + '</span></span></div>'
+        +   '<div class="detail-row"><span class="detail-label">Last seen</span><span class="detail-value">' + (s.last_seen ? fmtTs(s.last_seen) : '<span class="empty">—</span>') + '</span></div>'
+        + '</div>'
+        + '<div class="detail-section">Allocation</div>'
+        + '<div class="detail-grid">'
+        +   '<div class="detail-row"><span class="detail-label">BC Edge unit</span><span class="detail-value"><code>' + (s.edge_id ? U.escapeHtml(s.edge_id) : '<span class="empty">Unallocated</span>') + '</code></span></div>'
+        +   '<div class="detail-row"><span class="detail-label">Site</span><span class="detail-value">' + (s.site_name ? U.escapeHtml(s.site_name) : '<span class="empty">—</span>') + '</span></div>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:flex-end;margin-top:16px;"><button class="btn" onclick="window.FlexModal.close()">Close</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openAllocateSimModal(iccid) {
+    var edgeDevices = DEVICES.filter(function(d) { return d.type === 'edge_device'; });
+    var opts = edgeDevices.map(function(d) {
+      var hasSim = SIMS.some(function(s) { return s.edge_id === d.edge_id && s.status === 'active'; });
+      return '<option value="' + d.edge_id + '"' + (hasSim ? ' disabled' : '') + '>' + U.escapeHtml(d.edge_id) + ' — ' + (d.site_name ? U.escapeHtml(d.site_name) : 'Unassigned') + (hasSim ? ' (SIM active)' : '') + '</option>';
+    }).join('');
+    window.FlexModal.open({
+      title: 'Allocate SIM to BC Edge', eyebrow: iccid,
+      html: '<div class="invite-form">'
+        + '<div class="form-field"><label class="form-label">BC Edge unit</label><select class="select"><option value="">Select Edge unit…</option>' + opts + '</select>'
+        +   '<div class="form-hint">SIM will be installed in this unit. Only Edge units without an active SIM are selectable.</div></div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Allocate SIM</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openReallocateSimModal(iccid) {
+    var s = SIMS.find(function(x) { return x.iccid === iccid; });
+    openAllocateSimModal(iccid);
+  }
+
+  function openSuspendSimConfirm(iccid) {
+    window.FlexModal.open({
+      title: 'Suspend SIM', eyebrow: iccid,
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0 0 8px;">Suspend SIM <code>' + iccid + '</code>?</p>'
+        + '<p style="font-size:12px;color:var(--steel);margin:0;">The SIM will lose network connectivity. The BC Edge unit will stop sending telemetry until a new SIM is allocated.</p>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary" style="background:var(--status-fault);border-color:var(--status-fault);">Suspend SIM</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openActivateSimConfirm(iccid) {
+    window.FlexModal.open({
+      title: 'Activate SIM', eyebrow: iccid,
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0;">Reactivate SIM <code>' + iccid + '</code> on network?</p>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Activate SIM</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openAddSimModal() {
+    window.FlexModal.open({
+      title: 'Add SIM to inventory', eyebrow: 'SIM Inventory',
+      html: '<div class="invite-form">'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">ICCID *</label><input class="input" type="text" placeholder="20-digit SIM identifier" /></div>'
+        +   '<div class="form-field"><label class="form-label">MSISDN</label><input class="input" type="text" placeholder="+64…" /></div>'
+        + '</div>'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Network *</label><select class="select"><option>Spark</option><option>One NZ</option><option>2degrees</option></select></div>'
+        +   '<div class="form-field"><label class="form-label">Data plan *</label><select class="select"><option>500 MB / month</option><option>1 GB / month</option><option>2 GB / month</option></select></div>'
+        + '</div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Add to inventory</button></div>'
+        + '</div>'
+    });
   }
 
   /* ── Site modal helpers ──────────────────────────────────────── */
@@ -1192,6 +1384,23 @@
   window.openAssignSiteModal          = openAssignSiteModal;
   window.openRemoveFromSiteModal      = openRemoveFromSiteModal;
   window.openDecommissionDeviceConfirm = openDecommissionDeviceConfirm;
+  window.openSimDetail                = openSimDetail;
+  window.openAllocateSimModal         = openAllocateSimModal;
+  window.openReallocateSimModal       = openReallocateSimModal;
+  window.openSuspendSimConfirm        = openSuspendSimConfirm;
+  window.openActivateSimConfirm       = openActivateSimConfirm;
+  window.openAddSimModal              = openAddSimModal;
+
+  /* Device sub-tab switching */
+  document.getElementById('deviceSubTabs').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-sub]');
+    if (!btn) return;
+    deviceSubTab = btn.dataset.sub;
+    document.querySelectorAll('.device-sub-tab').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.sub === deviceSubTab);
+    });
+    renderDevices();
+  });
 
   ['userSearch', 'customerSearch', 'siteSearch', 'deviceSearch', 'auditSearch'].forEach(function(id) {
     var el = document.getElementById(id);
