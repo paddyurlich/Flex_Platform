@@ -187,12 +187,68 @@
     /* ── Deactivated row ──────────────────────────────────────── */
     tr.is-deactivated td { opacity: 0.5; }
 
-    /* ── Invite modal form ────────────────────────────────────── */
+    /* ── Invite / form modal ──────────────────────────────────── */
     .invite-form { display: flex; flex-direction: column; gap: 16px; }
     .form-field { display: flex; flex-direction: column; gap: 6px; }
     .form-label { font-size: 12px; font-weight: 700; color: var(--steel); text-transform: uppercase; letter-spacing: 0.06em; }
     .form-hint  { font-size: 11px; color: var(--steel); margin-top: 2px; }
     .invite-actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 8px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── Device type badge ────────────────────────────────────── */
+    .dev-type {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 3px; text-transform: uppercase;
+      letter-spacing: 0.05em; white-space: nowrap;
+    }
+    .dev-type.solar-inverter { background: #fef9c3; color: #854d0e; }
+    .dev-type.battery        { background: #dbeafe; color: #1e40af; }
+    .dev-type.edge-device    { background: #f3e8ff; color: #6b21a8; }
+    .dev-type.ev-charger     { background: #dcfce7; color: #166534; }
+    .dev-type.heat-pump      { background: #ffe4e6; color: #9f1239; }
+    .dev-type.other          { background: var(--line); color: var(--steel); }
+    [data-theme="dark"] .dev-type.solar-inverter { background: #422006; color: #fde68a; }
+    [data-theme="dark"] .dev-type.battery        { background: #1e3a5f; color: #93c5fd; }
+    [data-theme="dark"] .dev-type.edge-device    { background: #3b0764; color: #e9d5ff; }
+    [data-theme="dark"] .dev-type.ev-charger     { background: #14532d; color: #86efac; }
+    [data-theme="dark"] .dev-type.heat-pump      { background: #4c0519; color: #fda4af; }
+    [data-theme="dark"] .dev-type.other          { background: #2e2a25; color: #a39e92; }
+
+    /* ── Device status ────────────────────────────────────────── */
+    .dev-status {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .dev-status.online     { background: #22c55e; color: #0f3d1f; }
+    .dev-status.stale      { background: #f59e0b22; color: #92400e; border: 1px solid #f59e0b55; }
+    .dev-status.fault      { background: #fee2e2; color: #991b1b; }
+    .dev-status.unassigned { background: var(--line); color: var(--steel); }
+    [data-theme="dark"] .dev-status.online     { background: #16a34a; color: #d1fae5; }
+    [data-theme="dark"] .dev-status.stale      { background: #78350f33; color: #fcd34d; border-color: #78350f66; }
+    [data-theme="dark"] .dev-status.fault      { background: #450a0a; color: #fca5a5; }
+    [data-theme="dark"] .dev-status.unassigned { background: #2e2a25; color: #6b6660; }
+
+    /* ── Step indicator (multi-step modals) ───────────────────── */
+    .modal-steps {
+      display: flex; gap: 0; margin-bottom: 20px;
+      border-bottom: 2px solid var(--line);
+    }
+    .modal-step {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; padding: 6px 14px;
+      color: var(--steel); border-bottom: 2px solid transparent; margin-bottom: -2px;
+    }
+    .modal-step.active { color: var(--rust); border-bottom-color: var(--rust); }
+    [data-theme="dark"] .modal-step.active { color: #f47445; border-bottom-color: #f47445; }
+    [data-theme="dark"] .modal-steps { border-bottom-color: #2e2a25; }
+
+    /* ── Device detail panel ──────────────────────────────────── */
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin-bottom: 16px; }
+    .detail-row { display: flex; flex-direction: column; gap: 2px; }
+    .detail-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--steel); }
+    .detail-value { font-size: 13px; }
+    .detail-section { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--steel); margin: 14px 0 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+    [data-theme="dark"] .detail-section { border-top-color: #2e2a25; }
   </style>
 </head>
 
@@ -259,6 +315,7 @@
             <button class="admin-tab active" data-tab="users">Users</button>
             <button class="admin-tab" data-tab="customers">Customers</button>
             <button class="admin-tab" data-tab="sites">Sites</button>
+            <button class="admin-tab" id="devicesTab" data-tab="devices">Devices</button>
             <button class="admin-tab" id="auditTab" data-tab="audit">Audit Log</button>
           </div>
 
@@ -319,7 +376,10 @@
             <div class="card">
               <div class="tab-card-head">
                 <div><h2>Sites <span class="count" id="siteCount"></span></h2></div>
-                <input type="search" class="input" id="siteSearch" placeholder="Search sites…" style="width:220px;" />
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="search" class="input" id="siteSearch" placeholder="Search sites…" style="width:220px;" />
+                  <button class="btn primary" id="newSiteBtn" style="display:none;">+ New site</button>
+                </div>
               </div>
               <div class="table-wrap">
                 <table class="preview">
@@ -327,13 +387,47 @@
                     <tr>
                       <th>Site</th>
                       <th>Customer</th>
-                      <th>Sector</th>
                       <th>ICP</th>
+                      <th>Commissioned</th>
+                      <th>Tariff plan</th>
+                      <th>Devices</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody id="sitesBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Devices (Super Admin only) -->
+          <div class="tab-body" id="tab-devices" style="display:none;">
+            <div class="card">
+              <div class="tab-card-head">
+                <div><h2>Devices <span class="count" id="deviceCount"></span></h2></div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="search" class="input" id="deviceSearch" placeholder="Search devices…" style="width:220px;" />
+                  <button class="btn primary" id="commissionDeviceBtn">+ Commission device</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="preview">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Make / model</th>
+                      <th>Serial</th>
+                      <th>Site</th>
+                      <th>Customer</th>
+                      <th>Specs</th>
+                      <th>Edge ID</th>
+                      <th>Last telemetry</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="devicesBody"></tbody>
                 </table>
               </div>
             </div>
@@ -384,6 +478,28 @@
   'use strict';
   var U = window.FlexUtil;
   var FlexData = window.FlexData || { customers: [], sites: [] };
+
+  /* ── Tariff plans ────────────────────────────────────────────── */
+  var TARIFF_PLANS = ['Flex Saver', 'Flex Control', 'Flex Optimise', 'Standard Rate'];
+
+  /* ── Synthetic device data ───────────────────────────────────── */
+  var DEVICES = [
+    { id: 101, type: 'solar_inverter', make: 'SolarEdge',         model: 'SE10K',            serial: 'SE-NZ-0112',  site_name: 'Berkley Normal Middle School',  customer_name: 'Berkley Normal Middle School', pv_kwp: 22,   battery_kwh: null,  inverter_kw: 10,   edge_id: null,      last_telemetry: '2026-05-10T08:20:00', status: 'online' },
+    { id: 102, type: 'battery',        make: 'Sigenergy',          model: 'SigenStor 30',     serial: 'SIG-NZ-0445', site_name: 'PIL Group – SigenStor',          customer_name: 'PIL Group',                   pv_kwp: null, battery_kwh: 30,    inverter_kw: null, edge_id: null,      last_telemetry: '2026-05-10T07:55:00', status: 'online' },
+    { id: 103, type: 'edge_device',    make: 'Blackcurrent',       model: 'BC Edge v2',       serial: 'BCE-0087',    site_name: 'Keith Andrews – Wiri Site',      customer_name: 'Keith Andrews Automotive',    pv_kwp: null, battery_kwh: null,  inverter_kw: null, edge_id: 'BCE-0087', last_telemetry: '2026-05-10T08:28:00', status: 'online' },
+    { id: 104, type: 'ev_charger',     make: 'Wallbox',            model: 'Pulsar Plus 22kW', serial: 'WBX-NZ-1204', site_name: 'PIL Group – Processing Plant',   customer_name: 'PIL Group',                   pv_kwp: null, battery_kwh: null,  inverter_kw: 22,   edge_id: null,      last_telemetry: '2026-05-10T06:40:00', status: 'online' },
+    { id: 105, type: 'solar_inverter', make: 'Fronius',            model: 'Symo 17.5-3-M',   serial: 'FR-NZ-0231',  site_name: 'Bay of Islands College',         customer_name: 'Bay of Islands College',      pv_kwp: 22,   battery_kwh: null,  inverter_kw: 17.5, edge_id: null,      last_telemetry: '2026-05-09T16:50:00', status: 'online' },
+    { id: 106, type: 'battery',        make: 'Sigenergy',          model: 'SigenStor 60',     serial: 'SIG-NZ-0612', site_name: "Gubb's Farm",                    customer_name: "Gubb's Farm",                 pv_kwp: null, battery_kwh: 60,    inverter_kw: null, edge_id: null,      last_telemetry: '2026-05-10T04:10:00', status: 'online' },
+    { id: 107, type: 'edge_device',    make: 'Blackcurrent',       model: 'BC Edge v2',       serial: 'BCE-0063',    site_name: 'Aspara – Main Growing Facility', customer_name: 'Aspara',                      pv_kwp: null, battery_kwh: null,  inverter_kw: null, edge_id: 'BCE-0063', last_telemetry: '2026-05-10T08:30:00', status: 'online' },
+    { id: 108, type: 'solar_inverter', make: 'SMA',                model: 'Sunny Boy 6.0',    serial: 'SMA-NZ-0819', site_name: 'Ivondale Farm – Dairy Shed',     customer_name: 'Ivondale Farm',               pv_kwp: 18,   battery_kwh: null,  inverter_kw: 7.5,  edge_id: null,      last_telemetry: '2026-05-10T07:42:00', status: 'online' },
+    { id: 109, type: 'battery',        make: 'BYD',                model: 'Battery-Box HVS 10', serial: 'BYD-NZ-0344', site_name: 'MacHops – Hop Processing',    customer_name: 'MacHops',                     pv_kwp: null, battery_kwh: 10.24, inverter_kw: null, edge_id: null,      last_telemetry: '2026-05-09T23:15:00', status: 'stale' },
+    { id: 110, type: 'heat_pump',      make: 'Mitsubishi Electric', model: 'PUHZ-ZRP200YKA', serial: 'MEL-NZ-0127', site_name: 'Berkley Normal Middle School',  customer_name: 'Berkley Normal Middle School', pv_kwp: null, battery_kwh: null,  inverter_kw: null, edge_id: null,      last_telemetry: '2026-05-10T08:15:00', status: 'online' },
+    { id: 111, type: 'edge_device',    make: 'Blackcurrent',       model: 'BC Edge v2',       serial: 'BCE-0091',    site_name: null,                             customer_name: null,                          pv_kwp: null, battery_kwh: null,  inverter_kw: null, edge_id: 'BCE-0091', last_telemetry: null,                  status: 'unassigned' },
+    { id: 112, type: 'solar_inverter', make: 'Huawei',             model: 'SUN2000-20KTL',   serial: 'HW-NZ-0503',  site_name: null,                             customer_name: null,                          pv_kwp: 20,   battery_kwh: null,  inverter_kw: 20,   edge_id: null,      last_telemetry: null,                  status: 'unassigned' },
+    { id: 113, type: 'battery',        make: 'Sigenergy',          model: 'SigenStor 15',     serial: 'SIG-NZ-0788', site_name: 'Wairakei Primary – Main Building', customer_name: 'Wairakei Primary School',   pv_kwp: null, battery_kwh: 15,    inverter_kw: null, edge_id: null,      last_telemetry: '2026-05-08T18:30:00', status: 'fault' },
+    { id: 114, type: 'edge_device',    make: 'Blackcurrent',       model: 'BC Edge v2',       serial: 'BCE-0074',    site_name: 'Wairakei Primary – Main Building', customer_name: 'Wairakei Primary School',   pv_kwp: null, battery_kwh: null,  inverter_kw: null, edge_id: 'BCE-0074', last_telemetry: '2026-05-08T18:30:00', status: 'fault' },
+    { id: 115, type: 'ev_charger',     make: 'Schneider Electric', model: 'EVlink Pro AC',   serial: 'SCH-NZ-0392', site_name: null,                             customer_name: null,                          pv_kwp: null, battery_kwh: null,  inverter_kw: 7.4,  edge_id: null,      last_telemetry: null,                  status: 'unassigned' },
+  ];
 
   /* ── Synthetic user data ─────────────────────────────────────── */
   var USERS = [
@@ -490,10 +606,18 @@
       banner.style.display = 'none';
     }
 
-    /* Audit tab visibility (User Admin and below cannot see it) */
+    /* Devices tab — Super Admin only */
+    var devicesTabEl = document.getElementById('devicesTab');
+    devicesTabEl.classList.toggle('hidden', demoRole !== 'super_admin');
+    if (demoRole !== 'super_admin' && activeTab === 'devices') switchTab('sites');
+
+    /* Audit tab — hidden for User Admin */
     var auditTabEl = document.getElementById('auditTab');
     auditTabEl.classList.toggle('hidden', demoRole === 'user_admin');
     if (demoRole === 'user_admin' && activeTab === 'audit') switchTab('users');
+
+    /* New site button — Super Admin only */
+    document.getElementById('newSiteBtn').style.display = demoRole === 'super_admin' ? '' : 'none';
 
     /* Invite button */
     document.getElementById('inviteBtn').style.display = canInvite() ? '' : 'none';
@@ -519,6 +643,7 @@
       case 'users':     renderUsers();     break;
       case 'customers': renderCustomers(); break;
       case 'sites':     renderSites();     break;
+      case 'devices':   renderDevices();   break;
       case 'audit':     renderAudit();     break;
     }
   }
@@ -582,26 +707,93 @@
     var STATUS_LABEL = { ok: 'Online', warn: 'Stale', fault: 'Offline', pending: 'Pending' };
     var sites = FlexData.sites.filter(function(s) {
       if (!search) return true;
-      return (s.name + s.customer_name + (s.icp || '')).toLowerCase().indexOf(search) !== -1;
+      return (s.name + s.customer_name + (s.icp || '') + (s.address || '')).toLowerCase().indexOf(search) !== -1;
     });
     if (demoRole === 'partner_admin') sites = sites.slice(0, 20);
-    if (demoRole === 'user_admin') sites = sites.filter(function(s) { return s.customer_id === 74; }); /* PIL Group */
+    if (demoRole === 'user_admin') sites = sites.filter(function(s) { return s.customer_id === 74; });
     document.getElementById('siteCount').textContent = '· ' + sites.length;
-    var canEdit = demoRole === 'super_admin' || demoRole === 'partner_admin' || demoRole === 'user_admin';
+
     document.getElementById('sitesBody').innerHTML = sites.length ? sites.map(function(s) {
-      var actions = canEdit
-        ? '<button class="tbl-action">Edit</button>'
-          + (demoRole === 'super_admin' ? '<button class="tbl-action">Devices</button>' : '')
-        : '<span class="empty">—</span>';
+      var isPending = s.status === 'pending';
+      var tariff = isPending ? null : TARIFF_PLANS[s.id % TARIFF_PLANS.length];
+      var devCount = DEVICES.filter(function(d) { return d.site_name === s.name; }).length;
+      var commCell = isPending
+        ? '<span class="flag pending">Pending</span>'
+        : '<span class="flag ok">Yes</span>';
+      var tariffCell = tariff || '<span class="empty">—</span>';
+
+      var actions = '<button class="tbl-action" onclick="openEditSiteModal(' + s.id + ')">Edit</button>';
+      if (demoRole === 'super_admin') {
+        actions += '<button class="tbl-action" onclick="openAssignTariffModal(' + s.id + ',\'' + U.escapeHtml(s.name) + '\')">Assign tariff</button>';
+        actions += '<button class="tbl-action" onclick="openSiteDevicesModal(\'' + U.escapeHtml(s.name) + '\')">Devices</button>';
+        if (isPending) {
+          actions += '<button class="tbl-action" onclick="openCommissionConfirm(\'' + U.escapeHtml(s.name) + '\')">Commission</button>';
+          actions += '<button class="tbl-action danger" onclick="openDeleteSiteConfirm(\'' + U.escapeHtml(s.name) + '\')">Delete</button>';
+        } else {
+          actions += '<button class="tbl-action danger" onclick="openDecommissionConfirm(\'' + U.escapeHtml(s.name) + '\')">Decommission</button>';
+        }
+      }
+
       return '<tr>'
-        + '<td><strong>' + U.escapeHtml(s.name) + '</strong></td>'
+        + '<td><strong>' + U.escapeHtml(s.name) + '</strong>'
+        + (s.address ? '<br><span style="font-size:11px;color:var(--steel);">' + U.escapeHtml(s.address) + '</span>' : '') + '</td>'
         + '<td style="font-size:12px;color:var(--steel);">' + U.escapeHtml(s.customer_name) + '</td>'
-        + '<td>' + U.escapeHtml(s.sector || '—') + '</td>'
         + '<td><code style="font-size:11px;">' + U.escapeHtml(s.icp || '—') + '</code></td>'
+        + '<td>' + commCell + '</td>'
+        + '<td style="font-size:12px;">' + tariffCell + '</td>'
+        + '<td style="font-size:12px;text-align:center;">' + devCount + '</td>'
         + '<td><span class="flag ' + s.status + '">' + (STATUS_LABEL[s.status] || s.status) + '</span></td>'
         + '<td>' + actions + '</td>'
         + '</tr>';
-    }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--steel);padding:24px;">No sites found.</td></tr>';
+    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--steel);padding:24px;">No sites found.</td></tr>';
+  }
+
+  /* ── Render: Devices tab ─────────────────────────────────────── */
+  function renderDevices() {
+    var search = (document.getElementById('deviceSearch').value || '').toLowerCase();
+    var TYPE_LABELS = { solar_inverter: 'Solar inverter', battery: 'Battery', edge_device: 'Edge device', ev_charger: 'EV charger', heat_pump: 'Heat pump', other: 'Other' };
+    var devices = DEVICES.filter(function(d) {
+      if (!search) return true;
+      return ([d.type, d.make, d.model, d.serial, d.site_name, d.customer_name, d.edge_id].filter(Boolean).join(' ')).toLowerCase().indexOf(search) !== -1;
+    });
+    document.getElementById('deviceCount').textContent = '· ' + devices.length;
+
+    document.getElementById('devicesBody').innerHTML = devices.length ? devices.map(function(d) {
+      var typeCls = d.type.replace(/_/g, '-');
+      var typeLabel = TYPE_LABELS[d.type] || d.type;
+      var specParts = [];
+      if (d.pv_kwp)      specParts.push(d.pv_kwp + ' kWp PV');
+      if (d.battery_kwh) specParts.push(d.battery_kwh + ' kWh');
+      if (d.inverter_kw) specParts.push(d.inverter_kw + ' kW inverter');
+      var specs = specParts.join(' · ') || '<span class="empty">—</span>';
+
+      var actions = '<button class="tbl-action" onclick="openDeviceDetail(' + d.id + ')">Detail</button>'
+        + '<button class="tbl-action" onclick="openEditDeviceModal(' + d.id + ')">Edit specs</button>';
+      if (d.type === 'edge_device') {
+        actions += '<button class="tbl-action" onclick="openEdgeSettingsModal(' + d.id + ')">Edge settings</button>';
+      }
+      if (d.status === 'unassigned') {
+        actions += '<button class="tbl-action" onclick="openAssignSiteModal(' + d.id + ')">Assign to site</button>';
+      } else {
+        actions += '<button class="tbl-action danger" onclick="openRemoveFromSiteModal(' + d.id + ')">Remove from site</button>';
+      }
+      if (d.status !== 'unassigned') {
+        actions += '<button class="tbl-action danger" onclick="openDecommissionDeviceConfirm(' + d.id + ')">Decommission</button>';
+      }
+
+      return '<tr>'
+        + '<td><span class="dev-type ' + typeCls + '">' + typeLabel + '</span></td>'
+        + '<td><strong style="font-size:12px;">' + U.escapeHtml(d.make) + '</strong><br><span style="font-size:11px;color:var(--steel);">' + U.escapeHtml(d.model) + '</span></td>'
+        + '<td><code style="font-size:11px;">' + U.escapeHtml(d.serial) + '</code></td>'
+        + '<td style="font-size:12px;">' + (d.site_name ? U.escapeHtml(d.site_name) : '<span class="empty">Unassigned</span>') + '</td>'
+        + '<td style="font-size:12px;color:var(--steel);">' + (d.customer_name ? U.escapeHtml(d.customer_name) : '<span class="empty">—</span>') + '</td>'
+        + '<td style="font-size:12px;">' + specs + '</td>'
+        + '<td><code style="font-size:11px;">' + (d.edge_id ? U.escapeHtml(d.edge_id) : '<span class="empty">—</span>') + '</code></td>'
+        + '<td style="font-size:12px;font-variant-numeric:tabular-nums;">' + (d.last_telemetry ? fmtTs(d.last_telemetry) : '<span class="empty">—</span>') + '</td>'
+        + '<td><span class="dev-status ' + d.status + '">' + d.status + '</span></td>'
+        + '<td>' + actions + '</td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="10" style="text-align:center;color:var(--steel);padding:24px;">No devices match.</td></tr>';
   }
 
   /* ── Render: Audit Log tab ───────────────────────────────────── */
@@ -621,6 +813,309 @@
         + '<td style="font-size:12px;">' + U.escapeHtml(e.detail) + '</td>'
         + '</tr>';
     }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--steel);padding:24px;">No entries match.</td></tr>';
+  }
+
+  /* ── Site modal helpers ──────────────────────────────────────── */
+  function openNewSiteModal() {
+    var customerOpts = FlexData.customers.map(function(c) {
+      return '<option value="' + c.id + '">' + U.escapeHtml(c.name) + '</option>';
+    }).join('');
+    window.FlexModal.open({
+      title: 'New site', eyebrow: 'Sites',
+      html: '<div class="invite-form">'
+        + '<p style="font-size:12px;color:var(--steel);margin:0 0 4px;">Site will be created as Pending until an Edge device is commissioned.</p>'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Site name *</label><input class="input" type="text" placeholder="e.g. Main Dairy Shed" /></div>'
+        +   '<div class="form-field"><label class="form-label">Customer *</label><select class="select"><option value="">Select customer…</option>' + customerOpts + '</select></div>'
+        + '</div>'
+        + '<div class="form-field"><label class="form-label">Address *</label><input class="input" type="text" placeholder="Street, suburb, region" /></div>'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">ICP *</label><input class="input" type="text" placeholder="0000123456789" /></div>'
+        +   '<div class="form-field"><label class="form-label">GXP</label><input class="input" type="text" placeholder="e.g. HLY0111" /></div>'
+        + '</div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Create site</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openEditSiteModal(siteId) {
+    var site = FlexData.sites.find(function(s) { return s.id === siteId; }) || {};
+    var customerOpts = FlexData.customers.map(function(c) {
+      return '<option value="' + c.id + '"' + (c.id === site.customer_id ? ' selected' : '') + '>' + U.escapeHtml(c.name) + '</option>';
+    }).join('');
+    var tariffOpts = TARIFF_PLANS.map(function(t) { return '<option>' + t + '</option>'; }).join('');
+    window.FlexModal.open({
+      title: 'Edit site', eyebrow: U.escapeHtml(site.name || 'Site'),
+      html: '<div class="invite-form">'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Site name</label><input class="input" type="text" value="' + U.escapeHtml(site.name || '') + '" /></div>'
+        +   '<div class="form-field"><label class="form-label">Customer</label><select class="select">' + customerOpts + '</select></div>'
+        + '</div>'
+        + '<div class="form-field"><label class="form-label">Address</label><input class="input" type="text" value="' + U.escapeHtml(site.address || '') + '" /></div>'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">ICP</label><input class="input" type="text" value="' + U.escapeHtml(site.icp || '') + '" /></div>'
+        +   '<div class="form-field"><label class="form-label">GXP</label><input class="input" type="text" value="' + U.escapeHtml(site.gxp || '') + '" /></div>'
+        + '</div>'
+        + (demoRole === 'super_admin' ? '<div class="form-field"><label class="form-label">Tariff plan</label><select class="select"><option value="">— Unassigned —</option>' + tariffOpts + '</select></div>' : '')
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Save changes</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openAssignTariffModal(siteId, siteName) {
+    var tariffOpts = TARIFF_PLANS.map(function(t) {
+      return '<option>' + t + '</option>';
+    }).join('');
+    window.FlexModal.open({
+      title: 'Assign tariff plan', eyebrow: siteName,
+      html: '<div class="invite-form">'
+        + '<div class="form-field"><label class="form-label">Tariff plan</label><select class="select">' + tariffOpts + '</select>'
+        + '<div class="form-hint">The assigned plan determines how energy use is priced and analysed in Flex:Tariff.</div></div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Assign plan</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openCommissionConfirm(siteName) {
+    window.FlexModal.open({
+      title: 'Commission site', eyebrow: siteName,
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0;">Commission <strong>' + U.escapeHtml(siteName) + '</strong> as an active site? The site will appear in the platform once an Edge device is assigned and reporting telemetry.</p>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Commission site</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openDecommissionConfirm(siteName) {
+    window.FlexModal.open({
+      title: 'Decommission site', eyebrow: siteName,
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0 0 8px;"><strong>' + U.escapeHtml(siteName) + '</strong> will be removed from active telemetry and marked Offline.</p>'
+        + '<p style="font-size:12px;color:var(--steel);margin:0;">All devices remain in inventory as Unassigned. Billing history and audit records are retained.</p>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary" style="background:var(--status-fault);border-color:var(--status-fault);">Decommission</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openDeleteSiteConfirm(siteName) {
+    window.FlexModal.open({
+      title: 'Delete site', eyebrow: siteName,
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0 0 8px;">This will permanently delete <strong>' + U.escapeHtml(siteName) + '</strong>. This cannot be undone.</p>'
+        + '<div class="form-field"><label class="form-label">Type the site name to confirm</label><input class="input" type="text" placeholder="' + U.escapeHtml(siteName) + '" /></div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary" style="background:var(--status-fault);border-color:var(--status-fault);">Delete site</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openSiteDevicesModal(siteName) {
+    var siteDevices = DEVICES.filter(function(d) { return d.site_name === siteName; });
+    var TYPE_LABELS = { solar_inverter: 'Solar inverter', battery: 'Battery', edge_device: 'Edge device', ev_charger: 'EV charger', heat_pump: 'Heat pump', other: 'Other' };
+    var rows = siteDevices.length ? siteDevices.map(function(d) {
+      var typeCls = d.type.replace(/_/g, '-');
+      return '<tr>'
+        + '<td><span class="dev-type ' + typeCls + '">' + (TYPE_LABELS[d.type] || d.type) + '</span></td>'
+        + '<td style="font-size:12px;">' + U.escapeHtml(d.make) + ' ' + U.escapeHtml(d.model) + '</td>'
+        + '<td><code style="font-size:11px;">' + U.escapeHtml(d.serial) + '</code></td>'
+        + '<td><span class="dev-status ' + d.status + '">' + d.status + '</span></td>'
+        + '<td><button class="tbl-action danger" onclick="window.FlexModal.close()">Remove</button></td>'
+        + '</tr>';
+    }).join('') : '<tr><td colspan="5" style="color:var(--steel);padding:12px;text-align:center;">No devices assigned to this site.</td></tr>';
+
+    window.FlexModal.open({
+      title: 'Site devices', eyebrow: siteName,
+      html: '<div style="margin-bottom:12px;">'
+        + '<table class="preview" style="min-width:0;"><thead><tr><th>Type</th><th>Make / model</th><th>Serial</th><th>Status</th><th></th></tr></thead>'
+        + '<tbody>' + rows + '</tbody></table></div>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;">'
+        + '<button class="btn" onclick="openAssignSiteFromSiteModal(\'' + U.escapeHtml(siteName) + '\')">+ Add device</button>'
+        + '<button class="btn" onclick="window.FlexModal.close()">Done</button>'
+        + '</div>'
+    });
+  }
+
+  function openAssignSiteFromSiteModal(siteName) {
+    var unassigned = DEVICES.filter(function(d) { return d.status === 'unassigned'; });
+    var TYPE_LABELS = { solar_inverter: 'Solar inverter', battery: 'Battery', edge_device: 'Edge device', ev_charger: 'EV charger', heat_pump: 'Heat pump', other: 'Other' };
+    var opts = unassigned.length
+      ? unassigned.map(function(d) {
+          return '<option value="' + d.id + '">' + (TYPE_LABELS[d.type] || d.type) + ' — ' + d.make + ' ' + d.model + ' (' + d.serial + ')</option>';
+        }).join('')
+      : '<option disabled>No unassigned devices available</option>';
+    window.FlexModal.open({
+      title: 'Add device to site', eyebrow: siteName,
+      html: '<div class="invite-form">'
+        + '<div class="form-field"><label class="form-label">Select device</label><select class="select">' + opts + '</select>'
+        + '<div class="form-hint">Only unassigned devices are listed. Commission a new device from the Devices tab.</div></div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Assign device</button></div>'
+        + '</div>'
+    });
+  }
+
+  /* ── Device modal helpers ─────────────────────────────────────── */
+  function openDeviceDetail(deviceId) {
+    var d = DEVICES.find(function(x) { return x.id === deviceId; });
+    if (!d) return;
+    var TYPE_LABELS = { solar_inverter: 'Solar inverter', battery: 'Battery', edge_device: 'Edge device', ev_charger: 'EV charger', heat_pump: 'Heat pump', other: 'Other' };
+    var typeCls = d.type.replace(/_/g, '-');
+    var specRows = '';
+    if (d.pv_kwp)      specRows += '<div class="detail-row"><span class="detail-label">PV capacity</span><span class="detail-value">' + d.pv_kwp + ' kWp</span></div>';
+    if (d.battery_kwh) specRows += '<div class="detail-row"><span class="detail-label">Battery capacity</span><span class="detail-value">' + d.battery_kwh + ' kWh</span></div>';
+    if (d.inverter_kw) specRows += '<div class="detail-row"><span class="detail-label">Inverter size</span><span class="detail-value">' + d.inverter_kw + ' kW</span></div>';
+    if (d.edge_id)     specRows += '<div class="detail-row"><span class="detail-label">Edge device ID</span><span class="detail-value"><code>' + U.escapeHtml(d.edge_id) + '</code></span></div>';
+
+    window.FlexModal.open({
+      title: d.make + ' ' + d.model, eyebrow: (TYPE_LABELS[d.type] || d.type),
+      html: '<div>'
+        + '<span class="dev-type ' + typeCls + '" style="margin-bottom:14px;display:inline-block;">' + (TYPE_LABELS[d.type] || d.type) + '</span>'
+        + '<div class="detail-grid">'
+        +   '<div class="detail-row"><span class="detail-label">Make</span><span class="detail-value">' + U.escapeHtml(d.make) + '</span></div>'
+        +   '<div class="detail-row"><span class="detail-label">Model</span><span class="detail-value">' + U.escapeHtml(d.model) + '</span></div>'
+        +   '<div class="detail-row"><span class="detail-label">Serial number</span><span class="detail-value"><code>' + U.escapeHtml(d.serial) + '</code></span></div>'
+        +   '<div class="detail-row"><span class="detail-label">Status</span><span class="detail-value"><span class="dev-status ' + d.status + '">' + d.status + '</span></span></div>'
+        + specRows
+        + '</div>'
+        + '<div class="detail-section">Assignment</div>'
+        + '<div class="detail-grid">'
+        +   '<div class="detail-row"><span class="detail-label">Site</span><span class="detail-value">' + (d.site_name ? U.escapeHtml(d.site_name) : '<span class="empty">Unassigned</span>') + '</span></div>'
+        +   '<div class="detail-row"><span class="detail-label">Customer</span><span class="detail-value">' + (d.customer_name ? U.escapeHtml(d.customer_name) : '<span class="empty">—</span>') + '</span></div>'
+        + '</div>'
+        + '<div class="detail-section">Telemetry</div>'
+        + '<div class="detail-grid">'
+        +   '<div class="detail-row"><span class="detail-label">Last telemetry</span><span class="detail-value">' + (d.last_telemetry ? fmtTs(d.last_telemetry) : '<span class="empty">—</span>') + '</span></div>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:flex-end;margin-top:16px;">'
+        + '<button class="btn" onclick="window.FlexModal.close()">Close</button>'
+        + '</div></div>'
+    });
+  }
+
+  function openEditDeviceModal(deviceId) {
+    var d = DEVICES.find(function(x) { return x.id === deviceId; });
+    if (!d) return;
+    var TYPE_LABELS = { solar_inverter: 'Solar inverter', battery: 'Battery', edge_device: 'Edge device', ev_charger: 'EV charger', heat_pump: 'Heat pump', other: 'Other' };
+    var typeOpts = Object.keys(TYPE_LABELS).map(function(k) {
+      return '<option value="' + k + '"' + (k === d.type ? ' selected' : '') + '>' + TYPE_LABELS[k] + '</option>';
+    }).join('');
+    window.FlexModal.open({
+      title: 'Edit device specs', eyebrow: d.make + ' ' + d.model,
+      html: '<div class="invite-form">'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Device type</label><select class="select">' + typeOpts + '</select></div>'
+        +   '<div class="form-field"><label class="form-label">Serial number</label><input class="input" type="text" value="' + U.escapeHtml(d.serial) + '" /></div>'
+        + '</div>'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Make</label><input class="input" type="text" value="' + U.escapeHtml(d.make) + '" /></div>'
+        +   '<div class="form-field"><label class="form-label">Model</label><input class="input" type="text" value="' + U.escapeHtml(d.model) + '" /></div>'
+        + '</div>'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">PV size (kWp)</label><input class="input" type="number" step="0.1" value="' + (d.pv_kwp || '') + '" placeholder="—" /></div>'
+        +   '<div class="form-field"><label class="form-label">Battery capacity (kWh)</label><input class="input" type="number" step="0.01" value="' + (d.battery_kwh || '') + '" placeholder="—" /></div>'
+        + '</div>'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Inverter size (kW)</label><input class="input" type="number" step="0.1" value="' + (d.inverter_kw || '') + '" placeholder="—" /></div>'
+        +   '<div class="form-field"><label class="form-label">Edge device ID</label><input class="input" type="text" value="' + (d.edge_id || '') + '" placeholder="—" /></div>'
+        + '</div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Save changes</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openEdgeSettingsModal(deviceId) {
+    var d = DEVICES.find(function(x) { return x.id === deviceId; });
+    if (!d) return;
+    window.FlexModal.open({
+      title: 'Edge device settings', eyebrow: d.edge_id || d.serial,
+      html: '<div class="invite-form">'
+        + '<div class="form-field"><label class="form-label">Polling interval</label>'
+        +   '<select class="select"><option selected>5 minutes</option><option>1 minute</option><option>15 minutes</option><option>30 minutes</option></select>'
+        +   '<div class="form-hint">How frequently the Edge device sends telemetry to the platform.</div></div>'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Firmware channel</label><select class="select"><option selected>Stable</option><option>Beta</option><option>Edge (preview)</option></select></div>'
+        +   '<div class="form-field"><label class="form-label">Connectivity mode</label><select class="select"><option selected>4G / LTE</option><option>Wi-Fi</option><option>Ethernet</option></select></div>'
+        + '</div>'
+        + '<div class="form-field"><label class="form-label">SIM card ICCID</label><input class="input" type="text" value="89640400501234567890" />'
+        +   '<div class="form-hint">ICCID of the SIM assigned to this Edge device.</div></div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Save settings</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openAssignSiteModal(deviceId) {
+    var d = DEVICES.find(function(x) { return x.id === deviceId; });
+    if (!d) return;
+    var siteOpts = FlexData.sites.map(function(s) {
+      return '<option value="' + s.id + '">' + U.escapeHtml(s.name) + ' — ' + U.escapeHtml(s.customer_name) + '</option>';
+    }).join('');
+    window.FlexModal.open({
+      title: 'Assign to site', eyebrow: d.make + ' ' + d.model,
+      html: '<div class="invite-form">'
+        + '<div class="form-field"><label class="form-label">Site</label><select class="select"><option value="">Select site…</option>' + siteOpts + '</select></div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Assign</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openRemoveFromSiteModal(deviceId) {
+    var d = DEVICES.find(function(x) { return x.id === deviceId; });
+    if (!d) return;
+    window.FlexModal.open({
+      title: 'Remove from site', eyebrow: d.make + ' ' + d.model,
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0 0 8px;">Remove <strong>' + U.escapeHtml(d.make + ' ' + d.model) + '</strong> from <strong>' + U.escapeHtml(d.site_name || '') + '</strong>?</p>'
+        + '<p style="font-size:12px;color:var(--steel);margin:0;">The device will become Unassigned and can be reassigned to another site.</p>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary" style="background:var(--status-fault);border-color:var(--status-fault);">Remove from site</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openDecommissionDeviceConfirm(deviceId) {
+    var d = DEVICES.find(function(x) { return x.id === deviceId; });
+    if (!d) return;
+    window.FlexModal.open({
+      title: 'Decommission device', eyebrow: d.make + ' ' + d.model,
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0 0 8px;">Decommission <strong>' + U.escapeHtml(d.make + ' ' + d.model) + '</strong> (serial: ' + U.escapeHtml(d.serial) + ')?</p>'
+        + '<p style="font-size:12px;color:var(--steel);margin:0;">The device will be removed from active telemetry. The record is retained for audit purposes.</p>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary" style="background:var(--status-fault);border-color:var(--status-fault);">Decommission</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openCommissionDeviceModal() {
+    var TYPE_LABELS = { solar_inverter: 'Solar inverter', battery: 'Battery', edge_device: 'Edge device', ev_charger: 'EV charger', heat_pump: 'Heat pump', other: 'Other' };
+    var typeOpts = Object.keys(TYPE_LABELS).map(function(k) {
+      return '<option value="' + k + '">' + TYPE_LABELS[k] + '</option>';
+    }).join('');
+    var siteOpts = FlexData.sites.map(function(s) {
+      return '<option value="' + s.id + '">' + U.escapeHtml(s.name) + ' — ' + U.escapeHtml(s.customer_name) + '</option>';
+    }).join('');
+    window.FlexModal.open({
+      title: 'Commission device', eyebrow: 'Devices',
+      html: '<div class="invite-form">'
+        + '<div class="modal-steps"><span class="modal-step active">1 · Identity</span><span class="modal-step">2 · Specs</span><span class="modal-step">3 · Site</span></div>'
+        + '<div class="form-field"><label class="form-label">Device type *</label><select class="select"><option value="">Select type…</option>' + typeOpts + '</select></div>'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Make *</label><input class="input" type="text" placeholder="e.g. Sigenergy" /></div>'
+        +   '<div class="form-field"><label class="form-label">Model *</label><input class="input" type="text" placeholder="e.g. SigenStor 30" /></div>'
+        + '</div>'
+        + '<div class="form-field"><label class="form-label">Serial number *</label><input class="input" type="text" placeholder="Manufacturer serial number" /></div>'
+        + '<div style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px;">'
+        +   '<p style="font-size:11px;color:var(--steel);margin:0 0 10px;">Specs and site assignment are set in steps 2 and 3.</p>'
+        +   '<div class="form-row">'
+        +     '<div class="form-field"><label class="form-label">PV size (kWp)</label><input class="input" type="number" step="0.1" placeholder="—" /></div>'
+        +     '<div class="form-field"><label class="form-label">Battery capacity (kWh)</label><input class="input" type="number" step="0.01" placeholder="—" /></div>'
+        +   '</div>'
+        +   '<div class="form-row">'
+        +     '<div class="form-field"><label class="form-label">Inverter size (kW)</label><input class="input" type="number" step="0.1" placeholder="—" /></div>'
+        +     '<div class="form-field"><label class="form-label">Edge device ID</label><input class="input" type="text" placeholder="e.g. BCE-0099" /></div>'
+        +   '</div>'
+        +   '<div class="form-field"><label class="form-label">Assign to site (optional)</label><select class="select"><option value="">— Commission as unassigned —</option>' + siteOpts + '</select>'
+        +     '<div class="form-hint">You can assign the device to a site later from the Devices table.</div></div>'
+        + '</div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Commission device</button></div>'
+        + '</div>'
+    });
   }
 
   /* ── Invite modal ────────────────────────────────────────────── */
@@ -680,8 +1175,25 @@
   });
 
   document.getElementById('inviteBtn').addEventListener('click', openInviteModal);
+  document.getElementById('newSiteBtn').addEventListener('click', openNewSiteModal);
+  document.getElementById('commissionDeviceBtn').addEventListener('click', openCommissionDeviceModal);
 
-  ['userSearch', 'customerSearch', 'siteSearch', 'auditSearch'].forEach(function(id) {
+  /* Expose modal openers globally so onclick= attributes in dynamic HTML can call them */
+  window.openEditSiteModal            = openEditSiteModal;
+  window.openAssignTariffModal        = openAssignTariffModal;
+  window.openCommissionConfirm        = openCommissionConfirm;
+  window.openDecommissionConfirm      = openDecommissionConfirm;
+  window.openDeleteSiteConfirm        = openDeleteSiteConfirm;
+  window.openSiteDevicesModal         = openSiteDevicesModal;
+  window.openAssignSiteFromSiteModal  = openAssignSiteFromSiteModal;
+  window.openDeviceDetail             = openDeviceDetail;
+  window.openEditDeviceModal          = openEditDeviceModal;
+  window.openEdgeSettingsModal        = openEdgeSettingsModal;
+  window.openAssignSiteModal          = openAssignSiteModal;
+  window.openRemoveFromSiteModal      = openRemoveFromSiteModal;
+  window.openDecommissionDeviceConfirm = openDecommissionDeviceConfirm;
+
+  ['userSearch', 'customerSearch', 'siteSearch', 'deviceSearch', 'auditSearch'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('input', renderActiveTab);
   });
