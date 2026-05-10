@@ -137,6 +137,20 @@
     .tbl-action + .tbl-action { margin-left: 4px; }
     [data-theme="dark"] .tbl-action { border-color: #3a352f; color: #a39e92; }
 
+    /* ── Icon action buttons (Devices tab) ────────────────────── */
+    .icon-actions { display: flex; gap: 2px; align-items: center; }
+    .icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 4px;
+      border: 1px solid var(--line); background: none;
+      cursor: pointer; color: var(--steel); transition: all 0.1s;
+      flex-shrink: 0;
+    }
+    .icon-btn svg { width: 14px; height: 14px; stroke-width: 2; pointer-events: none; }
+    .icon-btn:hover { border-color: var(--rust); color: var(--rust); background: color-mix(in srgb, var(--rust) 6%, transparent); }
+    .icon-btn.danger:hover { border-color: var(--status-fault); color: var(--status-fault); background: color-mix(in srgb, var(--status-fault) 6%, transparent); }
+    [data-theme="dark"] .icon-btn { border-color: #3a352f; color: #a39e92; }
+
     /* ── Card header with action ──────────────────────────────── */
     .tab-card-head {
       display: flex; align-items: center; justify-content: space-between;
@@ -924,6 +938,10 @@
     });
     document.getElementById('deviceCount').textContent = '· ' + devices.length;
 
+    function iconBtn(icon, label, onclick, danger) {
+      return '<button class="icon-btn' + (danger ? ' danger' : '') + '" onclick="' + onclick + '" title="' + label + '" aria-label="' + label + '"><i data-lucide="' + icon + '"></i></button>';
+    }
+
     document.getElementById('devicesBody').innerHTML = devices.length ? devices.map(function(d) {
       var typeCls = d.type.replace(/_/g, '-');
       var typeLabel = TYPE_LABELS[d.type] || d.type;
@@ -933,19 +951,19 @@
       if (d.inverter_kw) specParts.push(d.inverter_kw + ' kW inverter');
       var specs = specParts.join(' · ') || '<span class="empty">—</span>';
 
-      var actions = '<button class="tbl-action" onclick="openDeviceDetail(' + d.id + ')">Detail</button>'
-        + '<button class="tbl-action" onclick="openEditDeviceModal(' + d.id + ')">Edit specs</button>';
+      var actions = '<div class="icon-actions">'
+        + iconBtn('info',   'Detail',    'openDeviceDetail(' + d.id + ')')
+        + iconBtn('pencil', 'Edit specs', 'openEditDeviceModal(' + d.id + ')');
       if (d.type === 'edge_device') {
-        actions += '<button class="tbl-action" onclick="openEdgeSettingsModal(' + d.id + ')">Edge settings</button>';
+        actions += iconBtn('cpu', 'Edge settings', 'openEdgeSettingsModal(' + d.id + ')');
       }
       if (d.status === 'unassigned') {
-        actions += '<button class="tbl-action" onclick="openAssignSiteModal(' + d.id + ')">Assign to site</button>';
+        actions += iconBtn('link', 'Assign to site', 'openAssignSiteModal(' + d.id + ')');
       } else {
-        actions += '<button class="tbl-action danger" onclick="openRemoveFromSiteModal(' + d.id + ')">Remove from site</button>';
+        actions += iconBtn('unlink',    'Remove from site', 'openRemoveFromSiteModal(' + d.id + ')', true);
+        actions += iconBtn('power-off', 'Decommission',     'openDecommissionDeviceConfirm(' + d.id + ')', true);
       }
-      if (d.status !== 'unassigned') {
-        actions += '<button class="tbl-action danger" onclick="openDecommissionDeviceConfirm(' + d.id + ')">Decommission</button>';
-      }
+      actions += '</div>';
 
       return '<tr>'
         + '<td><span class="dev-type ' + typeCls + '">' + typeLabel + '</span></td>'
@@ -960,6 +978,7 @@
         + '<td>' + actions + '</td>'
         + '</tr>';
     }).join('') : '<tr><td colspan="10" style="text-align:center;color:var(--steel);padding:24px;">No devices match.</td></tr>';
+    if (window.lucide) lucide.createIcons();
   }
 
   /* ── Render: Audit Log tab ───────────────────────────────────── */
