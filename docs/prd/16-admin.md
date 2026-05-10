@@ -344,6 +344,7 @@ A SIM inventory is maintained within the Devices tab. Each SIM record holds:
 | Status | Active / Suspended / Unallocated |
 | Allocated to | BC Edge serial number the SIM is installed in; "Unallocated" if in stock |
 | Last seen | Timestamp of most recent network registration |
+| Signal strength | Last recorded RSSI value in dBm; null if SIM is unallocated or has never reported |
 
 **SIM lifecycle**
 
@@ -366,6 +367,28 @@ When a Super Admin opens Edge settings for a BC Edge unit, the panel includes a 
 **SIM inventory view**
 
 A dedicated SIM Inventory sub-section is accessible from the Devices tab (filter: "SIMs"). It shows all SIMs in the Blackcurrent inventory with their status and allocation. Super Admin can add new SIMs to inventory, allocate/deallocate SIMs, and suspend/activate SIMs. This view is not accessible to Partner Admin, User Admin, or Standard User.
+
+**SIM detail panel**
+
+Clicking the Detail action on a SIM row opens a panel with two zones:
+
+*Signal strength zone (top)*
+
+- **Last recorded signal** — the most recent RSSI reading displayed as a large numeric value in dBm (e.g. −72 dBm), with a quality badge alongside it:
+
+| Range | Label |
+|---|---|
+| ≥ −70 dBm | Excellent |
+| −70 to −85 dBm | Good |
+| −85 to −100 dBm | Fair |
+| < −100 dBm | Poor |
+| No data | No data (SIM unallocated or never reported) |
+
+- **24-hour signal history chart** — a line chart plotting RSSI readings (dBm, Y axis −115 to −50) at half-hourly intervals over the past 24 hours. The line and fill colour match the quality band of the last recorded reading (green / amber / red). A threshold legend below the chart labels the four quality bands. SIMs with no signal data show a "No signal data available" message in place of the chart.
+
+*Identity and allocation zone (below chart)*
+
+All SIM record fields: ICCID, MSISDN, network, data plan, status, last seen, allocated BC Edge unit, and assigned site.
 
 ### User invitation flow
 
@@ -406,7 +429,8 @@ When a Partner Admin (or any user within a partner portfolio) is logged in, the 
 | Site record | ID, name, customer ID, partner ID, address, ICP, GXP, tariff plan ID, commissioned status, status |
 | Device record | ID, device type, make, model, serial number, site ID (nullable), PV size kWp, battery capacity kWh, inverter size kW, edge device ID (FK to BC Edge record), status, commissioned at |
 | BC Edge record | ID (serial / Edge device ID), SIM ICCID (FK to SIM record), site ID (nullable), firmware channel, polling interval, connectivity mode, status, last telemetry |
-| SIM record | ICCID, MSISDN, carrier/network, data plan, status (active / suspended / unallocated), allocated edge device ID (nullable), activated at, last seen |
+| SIM record | ICCID, MSISDN, carrier/network, data plan, status (active / suspended / unallocated), allocated edge device ID (nullable), activated at, last seen, last signal dBm (nullable) |
+| SIM signal reading | ICCID (FK), timestamp, RSSI dBm — time-series; retained for at least 30 days for charting |
 
 ---
 
