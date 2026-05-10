@@ -245,6 +245,18 @@
     [data-theme="dark"] .device-sub-tab + .device-sub-tab { border-left-color: #3a352f; }
     [data-theme="dark"] .device-sub-tab:hover { background: #201d19; color: var(--egg); }
 
+    /* ── SIM signal metric ────────────────────────────────────── */
+    .sim-signal-metric {
+      display: flex; align-items: baseline; gap: 12px;
+      padding: 14px 0 10px; margin-bottom: 2px;
+    }
+    .sim-signal-dbm {
+      font-size: 36px; font-weight: 800; letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums; line-height: 1;
+    }
+    .sim-signal-dbm span { font-size: 16px; font-weight: 600; color: var(--steel); margin-left: 2px; }
+    .sim-signal-quality { display: flex; align-items: center; }
+
     /* ── SIM status badge ─────────────────────────────────────── */
     .sim-status {
       display: inline-block; font-size: 10px; font-weight: 700;
@@ -524,6 +536,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/lucide/dist/umd/lucide.min.js"></script>
 <script src="data/sites_and_customers.js"></script>
 <script src="assets/flex-nav.js"></script>
@@ -539,15 +552,18 @@
 
   /* ── SIM inventory ───────────────────────────────────────────── */
   var SIMS = [
-    { iccid: '89640400501234567890', msisdn: '+64211234567', network: 'Spark',   plan: '1 GB / month', status: 'active',      edge_id: 'BCE-0087', site_name: 'Keith Andrews – Wiri Site',      last_seen: '2026-05-10T08:28:00' },
-    { iccid: '89640400501234567891', msisdn: '+64211234568', network: 'Spark',   plan: '1 GB / month', status: 'active',      edge_id: 'BCE-0063', site_name: 'Aspara – Main Growing Facility', last_seen: '2026-05-10T08:30:00' },
-    { iccid: '89640400501234567892', msisdn: '+64211234569', network: 'One NZ',  plan: '1 GB / month', status: 'active',      edge_id: 'BCE-0074', site_name: 'Wairakei Primary – Main Building', last_seen: '2026-05-08T18:30:00' },
-    { iccid: '89640400501234567893', msisdn: '+64211234570', network: 'One NZ',  plan: '1 GB / month', status: 'active',      edge_id: 'BCE-0091', site_name: null,                             last_seen: '2026-04-28T11:15:00' },
-    { iccid: '89640400501234567894', msisdn: '+64211234571', network: '2degrees', plan: '500 MB / month', status: 'suspended', edge_id: null,       site_name: null,                             last_seen: '2026-02-14T09:40:00' },
-    { iccid: '89640400501234567895', msisdn: '+64211234572', network: 'Spark',   plan: '1 GB / month', status: 'unallocated', edge_id: null,       site_name: null,                             last_seen: null },
-    { iccid: '89640400501234567896', msisdn: '+64211234573', network: 'Spark',   plan: '1 GB / month', status: 'unallocated', edge_id: null,       site_name: null,                             last_seen: null },
-    { iccid: '89640400501234567897', msisdn: '+64211234574', network: 'One NZ',  plan: '1 GB / month', status: 'unallocated', edge_id: null,       site_name: null,                             last_seen: null },
+    { iccid: '89640400501234567890', msisdn: '+64211234567', network: 'Spark',    plan: '1 GB / month',    status: 'active',      edge_id: 'BCE-0087', site_name: 'Keith Andrews – Wiri Site',       last_seen: '2026-05-10T08:28:00', signal_dbm: -72 },
+    { iccid: '89640400501234567891', msisdn: '+64211234568', network: 'Spark',    plan: '1 GB / month',    status: 'active',      edge_id: 'BCE-0063', site_name: 'Aspara – Main Growing Facility',  last_seen: '2026-05-10T08:30:00', signal_dbm: -68 },
+    { iccid: '89640400501234567892', msisdn: '+64211234569', network: 'One NZ',   plan: '1 GB / month',    status: 'active',      edge_id: 'BCE-0074', site_name: 'Wairakei Primary – Main Building', last_seen: '2026-05-08T18:30:00', signal_dbm: -91 },
+    { iccid: '89640400501234567893', msisdn: '+64211234570', network: 'One NZ',   plan: '1 GB / month',    status: 'active',      edge_id: 'BCE-0091', site_name: null,                              last_seen: '2026-04-28T11:15:00', signal_dbm: -84 },
+    { iccid: '89640400501234567894', msisdn: '+64211234571', network: '2degrees', plan: '500 MB / month',  status: 'suspended',   edge_id: null,       site_name: null,                              last_seen: '2026-02-14T09:40:00', signal_dbm: -107 },
+    { iccid: '89640400501234567895', msisdn: '+64211234572', network: 'Spark',    plan: '1 GB / month',    status: 'unallocated', edge_id: null,       site_name: null,                              last_seen: null,                  signal_dbm: null },
+    { iccid: '89640400501234567896', msisdn: '+64211234573', network: 'Spark',    plan: '1 GB / month',    status: 'unallocated', edge_id: null,       site_name: null,                              last_seen: null,                  signal_dbm: null },
+    { iccid: '89640400501234567897', msisdn: '+64211234574', network: 'One NZ',   plan: '1 GB / month',    status: 'unallocated', edge_id: null,       site_name: null,                              last_seen: null,                  signal_dbm: null },
   ];
+
+  /* Active chart instance — destroyed before a new one is created */
+  var _signalChart = null;
 
   /* ── Synthetic device data ───────────────────────────────────── */
   var DEVICES = [
@@ -1122,15 +1138,77 @@
     }
   }
 
+  /* ── SIM signal helpers ──────────────────────────────────────── */
+  function signalQuality(dbm) {
+    if (dbm === null || dbm === undefined) return { label: 'No data', cls: 'pending', color: '#a39e92' };
+    if (dbm >= -70) return { label: 'Excellent', cls: 'ok',   color: '#22c55e' };
+    if (dbm >= -85) return { label: 'Good',      cls: 'ok',   color: '#4ade80' };
+    if (dbm >= -100) return { label: 'Fair',     cls: 'warn', color: '#f59e0b' };
+    return { label: 'Poor', cls: 'fault', color: '#ef4444' };
+  }
+
+  function generateSignalHistory(baseDdm, points) {
+    /* Deterministic-ish history — walks from baseDdm with bounded drift */
+    var vals = [];
+    var v = baseDdm + (Math.round(baseDdm * 0.05) % 5); /* slight offset for start */
+    for (var i = 0; i < points; i++) {
+      /* Use index-based drift so output is consistent per base value */
+      var drift = Math.sin(i * 0.4 + baseDdm * 0.1) * 4 + Math.cos(i * 0.7) * 2;
+      v = Math.max(-112, Math.min(-55, baseDdm + drift));
+      vals.push(Math.round(v));
+    }
+    return vals;
+  }
+
+  function buildSignalLabels(points) {
+    /* Last `points` half-hour slots ending now */
+    var labels = [];
+    var now = new Date('2026-05-10T08:30:00');
+    for (var i = points - 1; i >= 0; i--) {
+      var t = new Date(now.getTime() - i * 30 * 60 * 1000);
+      labels.push(t.getHours().toString().padStart(2, '0') + ':' + t.getMinutes().toString().padStart(2, '0'));
+    }
+    return labels;
+  }
+
   /* ── SIM modal helpers ───────────────────────────────────────── */
   function openSimDetail(iccid) {
     var s = SIMS.find(function(x) { return x.iccid === iccid; });
     if (!s) return;
+
+    var q = signalQuality(s.signal_dbm);
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var gridColor  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    var labelColor = isDark ? '#a39e92' : '#6b7280';
+
+    var signalMetric = s.signal_dbm !== null
+      ? '<div class="sim-signal-metric">'
+        +   '<div class="sim-signal-dbm">' + s.signal_dbm + ' <span>dBm</span></div>'
+        +   '<div class="sim-signal-quality"><span class="flag ' + q.cls + '">' + q.label + '</span></div>'
+        + '</div>'
+      : '<div class="sim-signal-metric"><span class="empty" style="font-size:13px;">No signal data available</span></div>';
+
+    var chartSection = s.signal_dbm !== null
+      ? '<div class="detail-section">Signal strength — last 24 hours</div>'
+        + '<div style="position:relative;height:140px;margin-bottom:4px;">'
+        +   '<canvas id="simSignalChart"></canvas>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;font-size:10px;color:' + labelColor + ';margin-bottom:4px;">'
+        +   '<span>Excellent ≥ −70 dBm</span>'
+        +   '<span>Good ≥ −85</span>'
+        +   '<span>Fair ≥ −100</span>'
+        +   '<span>Poor &lt; −100</span>'
+        + '</div>'
+      : '';
+
     window.FlexModal.open({
       title: 'SIM detail', eyebrow: s.iccid,
       html: '<div>'
+        + signalMetric
+        + chartSection
+        + '<div class="detail-section">Identity</div>'
         + '<div class="detail-grid">'
-        +   '<div class="detail-row"><span class="detail-label">ICCID</span><span class="detail-value"><code>' + s.iccid + '</code></span></div>'
+        +   '<div class="detail-row"><span class="detail-label">ICCID</span><span class="detail-value"><code style="font-size:11px;">' + s.iccid + '</code></span></div>'
         +   '<div class="detail-row"><span class="detail-label">MSISDN</span><span class="detail-value"><code>' + U.escapeHtml(s.msisdn) + '</code></span></div>'
         +   '<div class="detail-row"><span class="detail-label">Network</span><span class="detail-value">' + U.escapeHtml(s.network) + '</span></div>'
         +   '<div class="detail-row"><span class="detail-label">Data plan</span><span class="detail-value">' + U.escapeHtml(s.plan) + '</span></div>'
@@ -1145,6 +1223,68 @@
         + '<div style="display:flex;justify-content:flex-end;margin-top:16px;"><button class="btn" onclick="window.FlexModal.close()">Close</button></div>'
         + '</div>'
     });
+
+    /* Render chart after modal DOM is available */
+    if (s.signal_dbm !== null) {
+      setTimeout(function () {
+        var canvas = document.getElementById('simSignalChart');
+        if (!canvas || !window.Chart) return;
+        if (_signalChart) { _signalChart.destroy(); _signalChart = null; }
+
+        var POINTS = 48;
+        var labels = buildSignalLabels(POINTS);
+        var data   = generateSignalHistory(s.signal_dbm, POINTS);
+
+        /* Segment colour by quality threshold */
+        _signalChart = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: data,
+              borderColor: q.color,
+              backgroundColor: q.color + '22',
+              borderWidth: 1.5,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+              fill: true,
+              tension: 0.35,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 300 },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) { return ctx.parsed.y + ' dBm'; }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: gridColor },
+                ticks: {
+                  color: labelColor, maxTicksLimit: 8, maxRotation: 0,
+                  font: { size: 10 }
+                }
+              },
+              y: {
+                reverse: false,
+                min: -115, max: -50,
+                grid: { color: gridColor },
+                ticks: {
+                  color: labelColor, font: { size: 10 },
+                  callback: function(v) { return v + ' dBm'; }
+                }
+              }
+            }
+          }
+        });
+      }, 60);
+    }
   }
 
   function openAllocateSimModal(iccid) {
