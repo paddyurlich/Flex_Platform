@@ -742,6 +742,11 @@
     if (window.lucide) lucide.createIcons();
   }
 
+  /* ── Shared icon button helper ──────────────────────────────── */
+  function iconBtn(icon, label, onclick, danger) {
+    return '<button class="icon-btn' + (danger ? ' danger' : '') + '" onclick="' + onclick + '" title="' + label + '" aria-label="' + label + '"><i data-lucide="' + icon + '"></i></button>';
+  }
+
   /* ── Tab switching ───────────────────────────────────────────── */
   function switchTab(tab) {
     activeTab = tab;
@@ -776,16 +781,18 @@
       var canEdit = canEditUser(u.role);
       var actions = '';
       if (canEdit) {
-        actions += '<button class="tbl-action" onclick="openEditUserModal(' + u.id + ')">Edit</button>';
+        actions += '<div class="icon-actions">'
+          + iconBtn('pencil', 'Edit user', 'openEditUserModal(' + u.id + ')');
         if (u.status === 'invited') {
-          actions += '<button class="tbl-action" onclick="openResendInviteConfirm(' + u.id + ')">Resend invite</button>';
+          actions += iconBtn('mail', 'Resend invitation', 'openResendInviteConfirm(' + u.id + ')');
         }
         if (u.status === 'active' || u.status === 'invited') {
-          actions += '<button class="tbl-action danger" onclick="openDeactivateUserConfirm(' + u.id + ')">Deactivate</button>';
+          actions += iconBtn('user-x', 'Deactivate', 'openDeactivateUserConfirm(' + u.id + ')', true);
         }
         if (u.status === 'deactivated' && (demoRole === 'super_admin' || demoRole === 'partner_admin')) {
-          actions += '<button class="tbl-action" onclick="openReactivateUserConfirm(' + u.id + ')">Reactivate</button>';
+          actions += iconBtn('user-check', 'Reactivate', 'openReactivateUserConfirm(' + u.id + ')');
         }
+        actions += '</div>';
       } else {
         actions = '<span class="empty">—</span>';
       }
@@ -798,6 +805,7 @@
         + '<td>' + actions + '</td>'
         + '</tr>';
     }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--steel);padding:24px;">No users match.</td></tr>';
+    if (window.lucide) lucide.createIcons();
   }
 
   /* ── Render: Customers tab ───────────────────────────────────── */
@@ -821,8 +829,10 @@
       var partnerCell = meta.partner ? meta.partner : (demoRole === 'super_admin' ? '<span class="empty">Direct</span>' : '');
       var actions = '';
       if (canEdit) {
-        actions += '<button class="tbl-action" onclick="openEditCustomerModal(' + c.id + ')">Edit</button>';
-        actions += '<button class="tbl-action" onclick="switchTabToSitesFor(' + c.id + ')">View sites</button>';
+        actions = '<div class="icon-actions">'
+          + iconBtn('pencil',  'Edit customer', 'openEditCustomerModal(' + c.id + ')')
+          + iconBtn('map-pin', 'View sites',    'switchTabToSitesFor(' + c.id + ')')
+          + '</div>';
       } else {
         actions = '<span class="empty">—</span>';
       }
@@ -838,6 +848,7 @@
         + '</tr>';
       return row;
     }).join('') : '<tr><td colspan="' + (demoRole === 'super_admin' ? 6 : 5) + '" style="text-align:center;color:var(--steel);padding:24px;">No customers found.</td></tr>';
+    if (window.lucide) lucide.createIcons();
   }
 
   /* ── Render: Sites tab ───────────────────────────────────────── */
@@ -861,17 +872,20 @@
         : '<span class="flag ok">Yes</span>';
       var tariffCell = tariff || '<span class="empty">—</span>';
 
-      var actions = '<button class="tbl-action" onclick="openEditSiteModal(' + s.id + ')">Edit</button>';
+      var sn = U.escapeHtml(s.name);
+      var actions = '<div class="icon-actions">'
+        + iconBtn('pencil', 'Edit site', 'openEditSiteModal(' + s.id + ')');
       if (demoRole === 'super_admin') {
-        actions += '<button class="tbl-action" onclick="openAssignTariffModal(' + s.id + ',\'' + U.escapeHtml(s.name) + '\')">Assign tariff</button>';
-        actions += '<button class="tbl-action" onclick="openSiteDevicesModal(\'' + U.escapeHtml(s.name) + '\')">Devices</button>';
+        actions += iconBtn('tag', 'Assign tariff', 'openAssignTariffModal(' + s.id + ',\'' + sn + '\')');
+        actions += iconBtn('cpu', 'Manage devices', 'openSiteDevicesModal(\'' + sn + '\')');
         if (isPending) {
-          actions += '<button class="tbl-action" onclick="openCommissionConfirm(\'' + U.escapeHtml(s.name) + '\')">Commission</button>';
-          actions += '<button class="tbl-action danger" onclick="openDeleteSiteConfirm(\'' + U.escapeHtml(s.name) + '\')">Delete</button>';
+          actions += iconBtn('check-circle', 'Commission site', 'openCommissionConfirm(\'' + sn + '\')');
+          actions += iconBtn('trash-2', 'Delete site', 'openDeleteSiteConfirm(\'' + sn + '\')', true);
         } else {
-          actions += '<button class="tbl-action danger" onclick="openDecommissionConfirm(\'' + U.escapeHtml(s.name) + '\')">Decommission</button>';
+          actions += iconBtn('power-off', 'Decommission site', 'openDecommissionConfirm(\'' + sn + '\')', true);
         }
       }
+      actions += '</div>';
 
       return '<tr>'
         + '<td><strong>' + U.escapeHtml(s.name) + '</strong>'
@@ -885,6 +899,7 @@
         + '<td>' + actions + '</td>'
         + '</tr>';
     }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--steel);padding:24px;">No sites found.</td></tr>';
+    if (window.lucide) lucide.createIcons();
   }
 
   /* ── Render: Devices tab dispatcher ─────────────────────────── */
@@ -937,10 +952,6 @@
       return ([d.type, d.make, d.model, d.serial, d.site_name, d.customer_name, d.edge_id].filter(Boolean).join(' ')).toLowerCase().indexOf(search) !== -1;
     });
     document.getElementById('deviceCount').textContent = '· ' + devices.length;
-
-    function iconBtn(icon, label, onclick, danger) {
-      return '<button class="icon-btn' + (danger ? ' danger' : '') + '" onclick="' + onclick + '" title="' + label + '" aria-label="' + label + '"><i data-lucide="' + icon + '"></i></button>';
-    }
 
     document.getElementById('devicesBody').innerHTML = devices.length ? devices.map(function(d) {
       var typeCls = d.type.replace(/_/g, '-');
