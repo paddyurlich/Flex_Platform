@@ -389,8 +389,9 @@
                     <tr>
                       <th>Customer</th>
                       <th>Sector</th>
+                      <th>Key contact</th>
                       <th>Sites</th>
-                      <th>Region</th>
+                      <th id="customerPartnerHead">Partner</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -567,6 +568,20 @@
     { id: 115, type: 'ev_charger',     make: 'Schneider Electric', model: 'EVlink Pro AC',   serial: 'SCH-NZ-0392', site_name: null,                             customer_name: null,                          pv_kwp: null, battery_kwh: null,  inverter_kw: 7.4,  edge_id: null,      last_telemetry: null,                  status: 'unassigned' },
   ];
 
+  /* ── Customer contact metadata ───────────────────────────────── */
+  var CUSTOMER_META = {
+    'Berkley Normal Middle School': { contact_name: 'Rachel Calden',  contact_email: 'rcalden@berkley.school.nz',   contact_phone: '+64 6 356 8824', billing_name: 'Finance Office',      billing_email: 'finance@berkley.school.nz',   partner: null,        notes: '' },
+    'PIL Group':                    { contact_name: 'Dion Ferriera',  contact_email: 'dion@pilgroup.co.nz',          contact_phone: '+64 9 277 4400', billing_name: 'Accounts Payable',     billing_email: 'ap@pilgroup.co.nz',           partner: null,        notes: 'Multi-site industrial customer. Primary contact for all sites.' },
+    'Keith Andrews Automotive':     { contact_name: 'Tom Baker',      contact_email: 'tom@keithandrews.co.nz',       contact_phone: '+64 9 262 1000', billing_name: 'Tom Baker',            billing_email: 'tom@keithandrews.co.nz',      partner: null,        notes: '' },
+    "Gubb's Farm":                  { contact_name: 'Peter Gubb',     contact_email: 'peter@gubbsfarm.co.nz',        contact_phone: '+64 7 878 8812', billing_name: 'Peter Gubb',           billing_email: 'peter@gubbsfarm.co.nz',       partner: 'Farmlands', notes: '' },
+    'MacHops':                      { contact_name: 'Craig McAlpine', contact_email: 'craig@machops.co.nz',          contact_phone: '+64 3 542 4210', billing_name: 'Accounts',             billing_email: 'accounts@machops.co.nz',      partner: 'Farmlands', notes: '' },
+    'Aspara':                       { contact_name: 'Lisa Wong',      contact_email: 'lisa@aspara.co.nz',            contact_phone: '+64 9 444 8801', billing_name: 'Lisa Wong',            billing_email: 'lisa@aspara.co.nz',           partner: null,        notes: 'Hydroponic growing operation. High energy sensitivity.' },
+    'Bay of Islands College':       { contact_name: 'James Dalton',   contact_email: 'jdalton@boic.school.nz',       contact_phone: '+64 9 407 8399', billing_name: 'Business Manager',     billing_email: 'bm@boic.school.nz',           partner: null,        notes: '' },
+    'Ivondale Farm':                { contact_name: 'Sarah Ivon',     contact_email: 'sarah@ivondalefarm.co.nz',     contact_phone: '+64 7 882 7741', billing_name: 'Sarah Ivon',           billing_email: 'sarah@ivondalefarm.co.nz',    partner: 'Farmlands', notes: '' },
+  };
+
+  var SECTORS = ['Agriculture', 'Education', 'Industrial', 'Manufacturing', 'Retail', 'Commercial', 'Healthcare', 'Hospitality', 'Other'];
+
   /* ── Synthetic user data ─────────────────────────────────────── */
   var USERS = [
     { id: 1, name: 'Paddy Urlich',      email: 'paddy@blackcurrent.io',      role: 'super_admin',   status: 'active',      lastLogin: '2026-05-10T08:30:00' },
@@ -686,6 +701,10 @@
     /* New site button — Super Admin only */
     document.getElementById('newSiteBtn').style.display = demoRole === 'super_admin' ? '' : 'none';
 
+    /* Partner column header — Super Admin only */
+    var ph = document.getElementById('customerPartnerHead');
+    if (ph) ph.style.display = demoRole === 'super_admin' ? '' : 'none';
+
     /* Invite button */
     document.getElementById('inviteBtn').style.display = canInvite() ? '' : 'none';
 
@@ -720,15 +739,26 @@
     var search = (document.getElementById('userSearch').value || '').toLowerCase();
     var users = visibleUsers().filter(function(u) {
       if (!search) return true;
-      return (u.name + u.email).toLowerCase().indexOf(search) !== -1;
+      return (u.name + u.email + u.role).toLowerCase().indexOf(search) !== -1;
     });
     document.getElementById('userCount').textContent = '· ' + users.length;
     document.getElementById('usersBody').innerHTML = users.length ? users.map(function(u) {
       var canEdit = canEditUser(u.role);
-      var actions = canEdit
-        ? '<button class="tbl-action">Edit role</button>'
-          + (u.status !== 'deactivated' ? '<button class="tbl-action danger">Deactivate</button>' : '')
-        : '<span class="empty">—</span>';
+      var actions = '';
+      if (canEdit) {
+        actions += '<button class="tbl-action" onclick="openEditUserModal(' + u.id + ')">Edit</button>';
+        if (u.status === 'invited') {
+          actions += '<button class="tbl-action" onclick="openResendInviteConfirm(' + u.id + ')">Resend invite</button>';
+        }
+        if (u.status === 'active' || u.status === 'invited') {
+          actions += '<button class="tbl-action danger" onclick="openDeactivateUserConfirm(' + u.id + ')">Deactivate</button>';
+        }
+        if (u.status === 'deactivated' && (demoRole === 'super_admin' || demoRole === 'partner_admin')) {
+          actions += '<button class="tbl-action" onclick="openReactivateUserConfirm(' + u.id + ')">Reactivate</button>';
+        }
+      } else {
+        actions = '<span class="empty">—</span>';
+      }
       return '<tr class="' + (u.status === 'deactivated' ? 'is-deactivated' : '') + '">'
         + '<td><strong>' + U.escapeHtml(u.name) + '</strong></td>'
         + '<td style="font-size:12px;color:var(--steel);">' + U.escapeHtml(u.email) + '</td>'
@@ -744,28 +774,40 @@
   function renderCustomers() {
     var search = (document.getElementById('customerSearch').value || '').toLowerCase();
     var customers = FlexData.customers.filter(function(c) {
+      var meta = CUSTOMER_META[c.name] || {};
       if (!search) return true;
-      return (c.name + (c.sector || '')).toLowerCase().indexOf(search) !== -1;
+      return (c.name + (c.sector || '') + (meta.contact_name || '') + (meta.contact_email || '')).toLowerCase().indexOf(search) !== -1;
     });
-    /* Partner Admin scope: show only a subset (agricultural/rural) */
-    if (demoRole === 'partner_admin') {
-      customers = customers.slice(0, 12);
-    }
+    if (demoRole === 'partner_admin') customers = customers.slice(0, 12);
+    if (demoRole === 'user_admin') customers = customers.slice(0, 3);
     document.getElementById('customerCount').textContent = '· ' + customers.length;
     var canEdit = demoRole === 'super_admin' || demoRole === 'partner_admin' || demoRole === 'user_admin';
     document.getElementById('customersBody').innerHTML = customers.length ? customers.map(function(c) {
       var siteCount = (c.site_ids || []).length;
-      var actions = canEdit
-        ? '<button class="tbl-action">Edit</button>'
+      var meta = CUSTOMER_META[c.name] || {};
+      var contactCell = meta.contact_name
+        ? U.escapeHtml(meta.contact_name) + '<br><span style="font-size:11px;color:var(--steel);">' + U.escapeHtml(meta.contact_email) + '</span>'
         : '<span class="empty">—</span>';
-      return '<tr>'
-        + '<td><strong>' + U.escapeHtml(c.name) + '</strong></td>'
+      var partnerCell = meta.partner ? meta.partner : (demoRole === 'super_admin' ? '<span class="empty">Direct</span>' : '');
+      var actions = '';
+      if (canEdit) {
+        actions += '<button class="tbl-action" onclick="openEditCustomerModal(' + c.id + ')">Edit</button>';
+        actions += '<button class="tbl-action" onclick="switchTabToSitesFor(' + c.id + ')">View sites</button>';
+      } else {
+        actions = '<span class="empty">—</span>';
+      }
+      var row = '<tr>'
+        + '<td><strong>' + U.escapeHtml(c.name) + '</strong>'
+        + (meta.notes ? '<br><span style="font-size:11px;color:var(--steel);">' + U.escapeHtml(meta.notes.slice(0, 60)) + (meta.notes.length > 60 ? '…' : '') + '</span>' : '')
+        + '</td>'
         + '<td>' + U.escapeHtml(c.sector || '—') + '</td>'
-        + '<td>' + siteCount + ' site' + (siteCount !== 1 ? 's' : '') + '</td>'
-        + '<td>' + U.escapeHtml(c.region || '—') + '</td>'
-        + '<td>' + actions + '</td>'
+        + '<td>' + contactCell + '</td>'
+        + '<td>' + siteCount + ' site' + (siteCount !== 1 ? 's' : '') + '</td>';
+      if (demoRole === 'super_admin') row += '<td style="font-size:12px;color:var(--steel);">' + partnerCell + '</td>';
+      row += '<td>' + actions + '</td>'
         + '</tr>';
-    }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--steel);padding:24px;">No customers found.</td></tr>';
+      return row;
+    }).join('') : '<tr><td colspan="' + (demoRole === 'super_admin' ? 6 : 5) + '" style="text-align:center;color:var(--steel);padding:24px;">No customers found.</td></tr>';
   }
 
   /* ── Render: Sites tab ───────────────────────────────────────── */
@@ -921,6 +963,163 @@
         + '<td style="font-size:12px;">' + U.escapeHtml(e.detail) + '</td>'
         + '</tr>';
     }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--steel);padding:24px;">No entries match.</td></tr>';
+  }
+
+  /* ── User modal helpers ──────────────────────────────────────── */
+  function openEditUserModal(userId) {
+    var u = USERS.find(function(x) { return x.id === userId; });
+    if (!u) return;
+
+    /* Roles the current editor can assign */
+    var assignableRoles = [];
+    if (demoRole === 'super_admin')   assignableRoles = ['super_admin', 'partner_admin', 'user_admin', 'standard_user'];
+    if (demoRole === 'partner_admin') assignableRoles = ['user_admin', 'standard_user'];
+    if (demoRole === 'user_admin')    assignableRoles = ['standard_user'];
+    var roleOpts = assignableRoles.map(function(r) {
+      var label = ROLE_CONFIG[r].label;
+      return '<option value="' + r + '"' + (r === u.role ? ' selected' : '') + '>' + label + '</option>';
+    }).join('');
+
+    /* Scope selector text based on role */
+    var scopeHtml = '';
+    if (demoRole === 'super_admin') {
+      var partnerOpts = '<option value="all"' + (u.role === 'super_admin' ? ' selected' : '') + '>All — no restriction</option>'
+        + '<option value="farmlands">Farmlands partner portfolio</option>';
+      var customerOpts = FlexData.customers.slice(0, 8).map(function(c) {
+        return '<option value="c' + c.id + '">' + U.escapeHtml(c.name) + '</option>';
+      }).join('');
+      scopeHtml = '<div class="form-field"><label class="form-label">Scope</label>'
+        + '<select class="select" id="editUserScope">' + partnerOpts + customerOpts + '</select>'
+        + '<div class="form-hint">Determines which customers and sites this user can see.</div></div>';
+    } else if (demoRole === 'partner_admin') {
+      var custOpts2 = FlexData.customers.slice(0, 6).map(function(c) {
+        return '<option value="c' + c.id + '">' + U.escapeHtml(c.name) + '</option>';
+      }).join('');
+      scopeHtml = '<div class="form-field"><label class="form-label">Scope</label>'
+        + '<select class="select">' + custOpts2 + '</select>'
+        + '<div class="form-hint">The customer(s) this user can access within the Farmlands portfolio.</div></div>';
+    }
+
+    window.FlexModal.open({
+      title: 'Edit user', eyebrow: U.escapeHtml(u.name),
+      html: '<div class="invite-form">'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Full name</label><input class="input" type="text" value="' + U.escapeHtml(u.name) + '" /></div>'
+        +   '<div class="form-field"><label class="form-label">Email address</label><input class="input" type="email" value="' + U.escapeHtml(u.email) + '" /></div>'
+        + '</div>'
+        + '<div class="form-field"><label class="form-label">Role</label>'
+        +   '<select class="select">' + roleOpts + '</select>'
+        +   '<div class="form-hint">You can only assign roles at or below your own access level.</div>'
+        + '</div>'
+        + scopeHtml
+        + '<div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px;">'
+        +   '<p class="form-label" style="margin-bottom:8px;">Account</p>'
+        +   '<div class="detail-grid">'
+        +     '<div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">' + statusBadge(u.status) + '</span></div>'
+        +     '<div class="detail-row"><span class="detail-label">Last login</span><span class="detail-value" style="font-size:12px;">' + (u.lastLogin ? fmtTs(u.lastLogin) : '—') + '</span></div>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="invite-actions">'
+        +   '<button class="btn" onclick="window.FlexModal.close()">Cancel</button>'
+        +   '<button class="btn primary">Save changes</button>'
+        + '</div>'
+        + '</div>'
+    });
+  }
+
+  function openDeactivateUserConfirm(userId) {
+    var u = USERS.find(function(x) { return x.id === userId; });
+    if (!u) return;
+    window.FlexModal.open({
+      title: 'Deactivate user', eyebrow: U.escapeHtml(u.name),
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0 0 8px;">Deactivate <strong>' + U.escapeHtml(u.name) + '</strong> (' + U.escapeHtml(u.email) + ')?</p>'
+        + '<p style="font-size:12px;color:var(--steel);margin:0;">Their account will be suspended immediately. They will not be able to log in. All their data and audit history is retained.</p>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary" style="background:var(--status-fault);border-color:var(--status-fault);">Deactivate</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openReactivateUserConfirm(userId) {
+    var u = USERS.find(function(x) { return x.id === userId; });
+    if (!u) return;
+    window.FlexModal.open({
+      title: 'Reactivate user', eyebrow: U.escapeHtml(u.name),
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0;">Reactivate <strong>' + U.escapeHtml(u.name) + '</strong>? They will be able to log in immediately with their previous role and scope.</p>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Reactivate</button></div>'
+        + '</div>'
+    });
+  }
+
+  function openResendInviteConfirm(userId) {
+    var u = USERS.find(function(x) { return x.id === userId; });
+    if (!u) return;
+    window.FlexModal.open({
+      title: 'Resend invitation', eyebrow: U.escapeHtml(u.name),
+      html: '<div class="invite-form">'
+        + '<p style="font-size:13px;margin:0;">Resend the invitation email to <strong>' + U.escapeHtml(u.email) + '</strong>? The previous link will be invalidated and a new 24-hour link will be issued.</p>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Resend invitation</button></div>'
+        + '</div>'
+    });
+  }
+
+  /* ── Customer modal helpers ───────────────────────────────────── */
+  function openEditCustomerModal(customerId) {
+    var c = FlexData.customers.find(function(x) { return x.id === customerId; });
+    if (!c) return;
+    var meta = CUSTOMER_META[c.name] || {};
+    var sectorOpts = SECTORS.map(function(s) {
+      return '<option' + (s === c.sector ? ' selected' : '') + '>' + s + '</option>';
+    }).join('');
+    var partnerOpts = demoRole === 'super_admin'
+      ? '<div class="form-field"><label class="form-label">Partner</label>'
+        + '<select class="select"><option value="">— Direct (no partner) —</option>'
+        + '<option value="farmlands"' + (meta.partner === 'Farmlands' ? ' selected' : '') + '>Farmlands</option>'
+        + '</select>'
+        + '<div class="form-hint">Assigning a partner gives Partner Admins for that partner access to this customer.</div></div>'
+      : '';
+    window.FlexModal.open({
+      title: 'Edit customer', eyebrow: U.escapeHtml(c.name),
+      html: '<div class="invite-form">'
+        + '<div class="form-row">'
+        +   '<div class="form-field"><label class="form-label">Customer name</label><input class="input" type="text" value="' + U.escapeHtml(c.name) + '" /></div>'
+        +   '<div class="form-field"><label class="form-label">Sector</label><select class="select">' + sectorOpts + '</select></div>'
+        + '</div>'
+        + partnerOpts
+        + '<div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px;">'
+        +   '<p class="form-label" style="margin-bottom:10px;">Key contact</p>'
+        +   '<div class="form-row">'
+        +     '<div class="form-field"><label class="form-label">Name</label><input class="input" type="text" value="' + U.escapeHtml(meta.contact_name || '') + '" placeholder="Contact name" /></div>'
+        +     '<div class="form-field"><label class="form-label">Phone</label><input class="input" type="tel" value="' + U.escapeHtml(meta.contact_phone || '') + '" placeholder="+64…" /></div>'
+        +   '</div>'
+        +   '<div class="form-field"><label class="form-label">Email</label><input class="input" type="email" value="' + U.escapeHtml(meta.contact_email || '') + '" placeholder="contact@example.com" /></div>'
+        + '</div>'
+        + '<div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px;">'
+        +   '<p class="form-label" style="margin-bottom:10px;">Billing contact</p>'
+        +   '<div class="form-row">'
+        +     '<div class="form-field"><label class="form-label">Name</label><input class="input" type="text" value="' + U.escapeHtml(meta.billing_name || '') + '" placeholder="Billing contact or team" /></div>'
+        +     '<div class="form-field"><label class="form-label">Email</label><input class="input" type="email" value="' + U.escapeHtml(meta.billing_email || '') + '" placeholder="billing@example.com" /></div>'
+        +   '</div>'
+        + '</div>'
+        + '<div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px;">'
+        +   '<div class="form-field"><label class="form-label">Notes</label>'
+        +     '<textarea class="input" rows="2" style="resize:vertical;">' + U.escapeHtml(meta.notes || '') + '</textarea>'
+        +     '<div class="form-hint">Internal notes — not visible to the customer.</div>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="invite-actions"><button class="btn" onclick="window.FlexModal.close()">Cancel</button><button class="btn primary">Save changes</button></div>'
+        + '</div>'
+    });
+  }
+
+  function switchTabToSitesFor(customerId) {
+    var c = FlexData.customers.find(function(x) { return x.id === customerId; });
+    switchTab('sites');
+    if (c) {
+      var el = document.getElementById('siteSearch');
+      if (el) { el.value = c.name; renderActiveTab(); }
+    }
   }
 
   /* ── SIM modal helpers ───────────────────────────────────────── */
@@ -1371,6 +1570,12 @@
   document.getElementById('commissionDeviceBtn').addEventListener('click', openCommissionDeviceModal);
 
   /* Expose modal openers globally so onclick= attributes in dynamic HTML can call them */
+  window.openEditUserModal            = openEditUserModal;
+  window.openDeactivateUserConfirm    = openDeactivateUserConfirm;
+  window.openReactivateUserConfirm    = openReactivateUserConfirm;
+  window.openResendInviteConfirm      = openResendInviteConfirm;
+  window.openEditCustomerModal        = openEditCustomerModal;
+  window.switchTabToSitesFor          = switchTabToSitesFor;
   window.openEditSiteModal            = openEditSiteModal;
   window.openAssignTariffModal        = openAssignTariffModal;
   window.openCommissionConfirm        = openCommissionConfirm;

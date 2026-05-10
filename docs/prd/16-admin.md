@@ -72,6 +72,10 @@ The table below defines what each role can do. **Edit** = create, update, delete
 | Invite Standard User | Edit | Edit (within partner) | Edit (within their customers) | — |
 | Assign / change roles | Edit | Edit (within partner; cannot assign above own role) | — | — |
 | Deactivate users | Edit | Edit (within partner) | Edit (Standard Users only, within their customers) | — |
+| Reactivate users | Edit | Edit (within partner) | — | — |
+| Resend invitation | Edit | Edit (within partner) | Edit (Standard Users only, within their customers) | — |
+| Edit user name / email | Edit | Edit (within partner) | Edit (Standard Users only, within their customers) | — |
+| Edit user scope / assignment | Edit | Edit (within partner; cannot widen beyond own scope) | — | — |
 | View user list | All users | Partner users | Customer users | — |
 
 ### Customer & site data
@@ -79,7 +83,10 @@ The table below defines what each role can do. **Edit** = create, update, delete
 | Action | Super Admin | Partner Admin | User Admin | Standard User |
 |---|---|---|---|---|
 | Create / delete customer | Edit | — | — | — |
-| Edit customer name, sector, contacts | Edit | Edit (within partner) | Edit (within their customers) | — |
+| Edit customer name, sector | Edit | Edit (within partner) | Edit (within their customers) | — |
+| Edit key contact (name, phone, email) | Edit | Edit (within partner) | Edit (within their customers) | — |
+| Edit internal notes | Edit | Edit (within partner) | Edit (within their customers) | — |
+| Edit partner assignment | Edit | — | — | — |
 | Edit site name, address, ICP, GXP | Edit | Edit (within partner) | Edit (within their customers) | — |
 | Create / delete site | Edit | — | — | — |
 | View customer and site records | All | Partner only | Their customers only | Their sites only |
@@ -134,6 +141,86 @@ The table below defines what each role can do. **Edit** = create, update, delete
 ### Admin console
 
 A dedicated settings area accessible at `/admin`, visible only to Super Admin, Partner Admin, and User Admin (with scope-appropriate views). Four tabs: **Users**, **Customers**, **Sites**, **Devices** (Sites and Devices visible to Super Admin only in full; scoped views for lower roles as described below).
+
+---
+
+#### Users tab
+
+Visible to Super Admin (all users), Partner Admin (partner users only), and User Admin (Standard Users within their assigned customers).
+
+**Table columns**
+
+| Column | Description |
+|---|---|
+| Name | Full name |
+| Email | Email address |
+| Role | Role badge: Super Admin / Partner Admin / User Admin / Standard User |
+| Status | Active / Invited / Deactivated badge |
+| Last login | Timestamp of most recent successful login, or "—" for invited / never logged in |
+| Actions | Contextual actions (see below) |
+
+Default sort: Role (Super Admin first) → Name. Search filters across name, email, and role.
+
+**Contextual row actions**
+
+| Action | Available when | Behaviour |
+|---|---|---|
+| Edit | Editor can edit that user's role (see permission matrix) | Opens Edit user modal |
+| Resend invite | User status = Invited | Issues a new 24-hour invitation link; previous link is invalidated |
+| Deactivate | User is Active or Invited; editor has permission | Opens confirmation. Account is suspended immediately. Data and audit history retained. |
+| Reactivate | User is Deactivated; editor is Super Admin or Partner Admin | Opens confirmation. User can log in immediately with their previous role and scope. |
+
+**Edit user modal**
+
+Fields:
+- **Full name** — text field, required.
+- **Email address** — text field, required. Changing email triggers a re-verification for the new address.
+- **Role** — select, limited to roles the editing admin can assign (cannot assign above own role).
+- **Scope** — determines what data the user can access. Field appears and adapts based on the selected role:
+  - Super Admin: no scope restriction; field hidden.
+  - Partner Admin: partner selector (Super Admin can change which partner; Partner Admin cannot change their own partner).
+  - User Admin: multi-select of customers within the admin's portfolio.
+  - Standard User: multi-select of sites within the admin's scope.
+- **Account section** — read-only: status badge, last login, member since.
+
+On save: all changes are written immediately and logged to the audit trail (old value → new value for each changed field).
+
+---
+
+#### Customers tab
+
+Visible to Super Admin (all customers), Partner Admin (partner portfolio), and User Admin (their assigned customers).
+
+**Table columns**
+
+| Column | Description |
+|---|---|
+| Customer | Customer name; may include a brief internal note excerpt |
+| Sector | Industry sector |
+| Key contact | Name and email of the primary contact person |
+| Sites | Count of sites assigned to this customer |
+| Partner | Partner name, or "Direct" if no partner (Super Admin only column) |
+| Actions | Edit, View sites |
+
+Default sort: Customer name (alphabetical). Search filters across name, sector, key contact name, and email.
+
+**Row actions**
+
+| Action | Available to | Behaviour |
+|---|---|---|
+| Edit | Super Admin, Partner Admin, User Admin | Opens Edit customer modal |
+| View sites | Super Admin, Partner Admin, User Admin | Jumps to the Sites tab pre-filtered to this customer's sites |
+
+**Edit customer modal**
+
+Sections:
+1. **Identity** — Customer name (text, required), Sector (select from defined list).
+2. **Partner assignment** — Super Admin only. Assigns the customer to a partner organisation. Assigning a partner grants Partner Admins for that partner access to the customer.
+3. **Key contact** — Name, phone, and email of the primary person for operational matters.
+4. **Billing contact** — Name and email for invoice and billing communications.
+5. **Internal notes** — Free text; not visible to the customer. Max 500 characters.
+
+On save: all changes are written immediately and logged to the audit trail.
 
 ---
 
